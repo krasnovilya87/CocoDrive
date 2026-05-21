@@ -48,6 +48,101 @@ interface AreaCollection {
   features: AreaFeature[];
 }
 
+const PlaceAutocomplete = ({ 
+  onPlaceSelect, 
+  value, 
+  onChange,
+  placeholder
+}: { 
+  onPlaceSelect: (place: google.maps.places.PlaceResult | null) => void, 
+  value: string, 
+  onChange: (val: string) => void,
+  placeholder?: string
+}) => {
+  const places = useMapsLibrary('places');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync value from prop to input ref directly to avoid React controlled input issues with Autocomplete
+  useEffect(() => {
+    if (inputRef.current && inputRef.current.value !== value) {
+      inputRef.current.value = value;
+    }
+  }, [value]);
+
+  const onPlaceSelectRef = useRef(onPlaceSelect);
+  useEffect(() => {
+    onPlaceSelectRef.current = onPlaceSelect;
+  }, [onPlaceSelect]);
+
+  useEffect(() => {
+    if (!places || !inputRef.current) return;
+
+    const options = {
+      fields: ['geometry', 'name', 'formatted_address', 'place_id'],
+      componentRestrictions: { country: 'id' } // Restrict to Indonesia for Bali context
+    };
+
+    const autocomplete = new places.Autocomplete(inputRef.current, options);
+    
+    const handleInput = () => {
+      if (inputRef.current) {
+        onChange(inputRef.current.value);
+      }
+    };
+
+    inputRef.current.addEventListener('input', handleInput);
+
+    const listener = autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place && place.geometry) {
+        onPlaceSelectRef.current(place);
+      }
+    });
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        const pacContainer = document.querySelector('.pac-container') as HTMLElement;
+        if (pacContainer && pacContainer.style.display !== 'none') {
+          const selected = pacContainer.querySelector('.pac-item-selected');
+          const firstResult = pacContainer.querySelector('.pac-item');
+          
+          if (!selected && firstResult) {
+            // Simulate down arrow and then return to let native enter handle it
+            const downArrow = new KeyboardEvent('keydown', {
+              key: 'ArrowDown',
+              code: 'ArrowDown',
+              keyCode: 40,
+              which: 40,
+              bubbles: true
+            });
+            inputRef.current?.dispatchEvent(downArrow);
+          }
+        }
+      }
+    };
+
+    inputRef.current?.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      google.maps.event.clearInstanceListeners(autocomplete);
+      inputRef.current?.removeEventListener('keydown', handleKeyDown);
+      inputRef.current?.removeEventListener('input', handleInput);
+      const pacContainers = document.querySelectorAll('.pac-container');
+      pacContainers.forEach(container => container.remove());
+    };
+  }, [places]);
+
+  return (
+    <input 
+      ref={inputRef}
+      type="text" 
+      defaultValue={value}
+      placeholder={placeholder || "Delivery Address"}
+      className="w-full h-[52px] bg-transparent border-0 pl-11 pr-10 text-[15px] md:text-base font-medium outline-none focus:outline-none focus:ring-0 relative z-0"
+    />
+  );
+};
+
 const MapPicker = ({ 
   position, 
   setPosition, 
@@ -56,7 +151,8 @@ const MapPicker = ({
   isFullscreen, 
   setIsFullscreen,
   selectedDistrict,
-  setSelectedDistrict
+  setSelectedDistrict,
+  location
 }: { 
   position: {lat: number, lng: number}, 
   setPosition: (p: {lat: number, lng: number}) => void, 
@@ -65,7 +161,8 @@ const MapPicker = ({
   isFullscreen: boolean, 
   setIsFullscreen: (f: boolean) => void,
   selectedDistrict: string | null | undefined,
-  setSelectedDistrict: (d: string | null) => void
+  setSelectedDistrict: (d: string | null) => void,
+  location: string
 }) => {
   const [areas, setAreas] = useState<AreaCollection | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -249,17 +346,58 @@ const MapPicker = ({
               </button>
             </div>
           </MapControl>
-
-          <MapControl position={ControlPosition.RIGHT_TOP}>
-             <button 
-                onClick={() => setIsFullscreen(!isFullscreen)}
-                className="w-10 h-10 bg-white/90 backdrop-blur shadow-xl rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all border border-border/50 m-4"
-              >
-                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-              </button>
-          </MapControl>
         </Map>
+
+        {/* Fullscreen Toggle Button - lowered below the search input on mobile view */}
+        <button 
+          type="button"
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          className={`absolute z-[460] w-10 h-10 bg-white shadow-xl rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all border border-border/50 active:scale-90 ${
+            isFullscreen 
+              ? 'top-[78px] right-4 sm:top-5 sm:right-5' 
+              : 'top-[74px] right-3 sm:top-3.5 sm:right-3.5'
+          }`}
+          title={isFullscreen ? (language === 'ru' ? 'Свернуть' : 'Exit fullscreen') : (language === 'ru' ? 'Во весь экран' : 'Fullscreen')}
+        >
+          {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+        </button>
         
+        {/* Search Input overlay (always inside map) */}
+        <div className={`absolute z-[450] bg-white border border-border rounded-2xl shadow-lg transition-all duration-300 focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/5 overflow-hidden ${
+          isFullscreen 
+            ? 'top-4 left-4 right-4 sm:right-16 sm:max-w-xl shadow-2xl' 
+            : 'top-3 left-3 right-3 sm:right-auto sm:w-[390px] md:w-[480px]'
+        }`}>
+          <div className="relative w-full">
+            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-60 z-10 pointer-events-none" />
+            <PlaceAutocomplete 
+              value={location}
+              onChange={setLocation}
+              onPlaceSelect={(place) => {
+                if (place && place.geometry?.location) {
+                  const newPos = {
+                    lat: place.geometry.location.lat(),
+                    lng: place.geometry.location.lng()
+                  };
+                  setPosition(newPos);
+                  setLocation(place.formatted_address || place.name || '');
+                }
+              }}
+              placeholder="Search address..."
+            />
+            {location && (
+              <button 
+                type="button"
+                onClick={() => setLocation('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-muted hover:text-foreground transition-all opacity-40 hover:opacity-100 z-10 cursor-pointer"
+                title={language === 'ru' ? 'Очистить' : 'Clear'}
+              >
+                <X className="w-4 h-4 text-muted" />
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Geolocation Error Alert */}
         <AnimatePresence>
           {geoError && (
@@ -267,7 +405,9 @@ const MapPicker = ({
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="absolute top-4 left-4 right-16 z-[400] flex items-start gap-2 p-3 bg-red-500/90 backdrop-blur text-white text-xs font-medium rounded-xl shadow-lg border border-red-400/30"
+              className={`absolute left-4 right-16 z-[400] flex items-start gap-2 p-3 bg-red-500/90 backdrop-blur text-white text-xs font-medium rounded-xl shadow-lg border border-red-400/30 ${
+                isFullscreen ? 'top-[132px]' : 'top-[128px]'
+              }`}
             >
               <Info className="w-4 h-4 shrink-0 mt-0.5" />
               <div className="flex-grow leading-tight">{geoError}</div>
@@ -425,90 +565,6 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
-const PlaceAutocomplete = ({ onPlaceSelect, value, onChange }: { onPlaceSelect: (place: google.maps.places.PlaceResult | null) => void, value: string, onChange: (val: string) => void }) => {
-  const places = useMapsLibrary('places');
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Sync value from prop to input ref directly to avoid React controlled input issues with Autocomplete
-  useEffect(() => {
-    if (inputRef.current && inputRef.current.value !== value) {
-      inputRef.current.value = value;
-    }
-  }, [value]);
-
-  const onPlaceSelectRef = useRef(onPlaceSelect);
-  useEffect(() => {
-    onPlaceSelectRef.current = onPlaceSelect;
-  }, [onPlaceSelect]);
-
-  useEffect(() => {
-    if (!places || !inputRef.current) return;
-
-    const options = {
-      fields: ['geometry', 'name', 'formatted_address', 'place_id'],
-      componentRestrictions: { country: 'id' } // Restrict to Indonesia for Bali context
-    };
-
-    const autocomplete = new places.Autocomplete(inputRef.current, options);
-    
-    const handleInput = () => {
-      if (inputRef.current) {
-        onChange(inputRef.current.value);
-      }
-    };
-
-    inputRef.current.addEventListener('input', handleInput);
-
-    const listener = autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (place && place.geometry) {
-        onPlaceSelectRef.current(place);
-      }
-    });
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        const pacContainer = document.querySelector('.pac-container') as HTMLElement;
-        if (pacContainer && pacContainer.style.display !== 'none') {
-          const selected = pacContainer.querySelector('.pac-item-selected');
-          const firstResult = pacContainer.querySelector('.pac-item');
-          
-          if (!selected && firstResult) {
-            // Simulate down arrow and then return to let native enter handle it
-            const downArrow = new KeyboardEvent('keydown', {
-              key: 'ArrowDown',
-              code: 'ArrowDown',
-              keyCode: 40,
-              which: 40,
-              bubbles: true
-            });
-            inputRef.current?.dispatchEvent(downArrow);
-          }
-        }
-      }
-    };
-
-    inputRef.current?.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      google.maps.event.clearInstanceListeners(autocomplete);
-      inputRef.current?.removeEventListener('keydown', handleKeyDown);
-      inputRef.current?.removeEventListener('input', handleInput);
-      const pacContainers = document.querySelectorAll('.pac-container');
-      pacContainers.forEach(container => container.remove());
-    };
-  }, [places]);
-
-  return (
-    <input 
-      ref={inputRef}
-      type="text" 
-      defaultValue={value}
-      placeholder="Delivery Address"
-      className="w-full h-[54px] bg-surface border border-border rounded-2xl pl-11 pr-10 text-[15px] md:text-base font-medium focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all outline-none relative z-0"
-    />
-  );
-};
 
 export const BookingDetails: React.FC<BookingDetailsProps> = ({ 
   bike, 
@@ -998,17 +1054,6 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
       })
     });
   };
-
-  const handlePlaceSelect = React.useCallback((place: google.maps.places.PlaceResult | null) => {
-    if (place && place.geometry?.location) {
-      const newPos = {
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng()
-      };
-      setMapPosition(newPos);
-      setLocation(place.formatted_address || place.name || '');
-    }
-  }, []);
 
   if (showPayment) {
     return (
@@ -1600,6 +1645,7 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
               setIsFullscreen={setIsMapFullscreen}
               selectedDistrict={selectedDistrict}
               setSelectedDistrict={setSelectedDistrict}
+              location={location}
             />
             {selectedDistrict === null && (
               <motion.div 
@@ -1623,37 +1669,17 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
             )}
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-start">
-            <div className="flex-1 relative group w-full">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-60 z-10 pointer-events-none" />
-                <PlaceAutocomplete 
-                  value={location}
-                  onChange={setLocation}
-                  onPlaceSelect={handlePlaceSelect}
-                />
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                  {location && (
-                    <button 
-                      type="button"
-                      onClick={() => setLocation('')}
-                      className="w-10 h-10 flex items-center justify-center text-muted hover:text-foreground transition-all opacity-40 hover:opacity-100"
-                      title="Clear"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-            <div className="w-full sm:w-[140px] shrink-0">
-              <div className="relative">
-                <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-60 z-10 pointer-events-none" />
-                <CustomTimePicker 
-                  value={deliveryTime} 
-                  onChange={setDeliveryTime} 
-                  language={language}
-                />
-              </div>
+          <div className="space-y-1.5">
+            <span className="text-[9px] text-muted uppercase font-bold tracking-widest px-1">
+              Delivery time
+            </span>
+            <div className="relative w-full">
+              <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary opacity-60 z-10 pointer-events-none" />
+              <CustomTimePicker 
+                value={deliveryTime} 
+                onChange={setDeliveryTime} 
+                language={language}
+              />
             </div>
           </div>
         </div>
@@ -1917,8 +1943,8 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
       />
 
     {/* Sticky Bottom Bar */}
-      <div className="sticky bottom-0 bg-surface/95 backdrop-blur-xl border-t border-border p-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:p-4 mt-auto z-[1000] shadow-[0_-20px_50px_rgba(0,0,0,0.15)]">
-        <div className="max-w-2xl mx-auto flex items-center justify-between gap-6">
+      <div className="sticky bottom-0 bg-surface/95 backdrop-blur-xl border-t border-border px-0 py-2.5 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:px-0 sm:py-4 mt-auto z-[1000] shadow-[0_-20px_50px_rgba(0,0,0,0.15)]">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-6 px-4">
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5">
               <span className="text-xl font-display font-bold text-foreground">
