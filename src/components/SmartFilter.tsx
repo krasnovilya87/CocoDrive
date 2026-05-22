@@ -208,91 +208,50 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
     if (!bikes || bikes.length === 0) return [];
 
     return bikes.map(bike => {
-      // 1. Passengers fit scoring (0.0 to 1.0)
-      let passengerScore = 1.0;
-      if (peopleCount === 2) {
-        if (bike.bestFor?.includes('Couple')) {
-          passengerScore = 1.0;
-        } else if (bike.engineSize >= 150) {
-          passengerScore = 0.9;
-        } else if (bike.engineSize >= 125) {
-          passengerScore = 0.7;
+      // --- SCALE 1: CITY & BEACHES ---
+      let bCity = 0;
+      if (bike.bestForPercentages && bike.bestForPercentages['City'] !== undefined) {
+        bCity = bike.bestForPercentages['City'];
+      } else {
+        bCity = bike.bestFor?.includes('City') ? 100 : (bike.engineSize <= 160 ? 90 : 75);
+      }
+      const sCity = cityVal <= 0 ? 1.0 : (bCity >= cityVal ? 1.0 : bCity / cityVal);
+
+      // --- SCALE 2: LONG TRIPS ---
+      let bLong = 0;
+      if (bike.bestForPercentages && bike.bestForPercentages['Long Trip'] !== undefined) {
+        bLong = bike.bestForPercentages['Long Trip'];
+      } else {
+        bLong = bike.bestFor?.includes('Long Trip') ? 100 : (bike.hasBigTrunk || bike.engineSize >= 250 ? 90 : (bike.engineSize >= 150 ? 80 : (bike.engineSize >= 125 ? 65 : 30)));
+      }
+      const sLong = longVal <= 0 ? 1.0 : (bLong >= longVal ? 1.0 : bLong / longVal);
+
+      // --- SCALE 3: PHOTO & AESTHETICS ---
+      let bPhoto = 0;
+      if (bike.bestForPercentages && bike.bestForPercentages['Photo'] !== undefined) {
+        bPhoto = bike.bestForPercentages['Photo'];
+      } else {
+        bPhoto = bike.bestFor?.includes('Photo') ? 100 : (bike.name.toLowerCase().includes('vespa') || bike.name.toLowerCase().includes('scoopy') || bike.name.toLowerCase().includes('filano') ? 90 : 40);
+      }
+      const sPhoto = photoVal <= 0 ? 1.0 : (bPhoto >= photoVal ? 1.0 : bPhoto / photoVal);
+
+      // --- SCALE 4: FOR WHOM / PEOPLE COUNT ---
+      let sPeople = 1.0;
+      if (peopleCount === 2) { // Couple selected
+        let bCouple = 0;
+        if (bike.bestForPercentages && bike.bestForPercentages['Couple'] !== undefined) {
+          bCouple = bike.bestForPercentages['Couple'];
         } else {
-          passengerScore = 0.4;
+          bCouple = bike.bestFor?.includes('Couple') ? 100 : (bike.engineSize >= 150 ? 90 : (bike.engineSize >= 125 ? 70 : 40));
         }
+        sPeople = bCouple >= 100 ? 1.0 : bCouple / 100;
       } else {
-        // 1 person fit is excellent on all, slightly nicer on fuel-efficient nimble/average size
-        passengerScore = 1.0;
+        // Solo traveler, or any traveler count represents a 100% fit for any standard scooter/bike
+        sPeople = 1.0;
       }
 
-      // 2. Destinations weighted scoring (0.0 to 1.0)
-      let destinationScore = 1.0;
-      let totalWeight = 0;
-      let weightedSum = 0;
-
-      const items = [
-        { key: 'City', currentVal: cityVal },
-        { key: 'Long Trip', currentVal: longVal },
-        { key: 'Photo', currentVal: photoVal }
-      ];
-
-      items.forEach(item => {
-        if (item.currentVal > 0) {
-          totalWeight += item.currentVal;
-          let matchRating = 0.4; // baseline
-
-          if (bike.bestForPercentages && bike.bestForPercentages[item.key] !== undefined) {
-            matchRating = bike.bestForPercentages[item.key] / 100;
-          } else {
-            const isExplicit = bike.bestFor?.includes(item.key);
-            if (isExplicit) {
-              matchRating = 1.0;
-            } else {
-              // Contextual capabilities fallback
-              if (item.key === 'City') {
-                if (bike.engineSize <= 160) {
-                  matchRating = 0.9; // nimble
-                } else {
-                  matchRating = 0.75; // a bit bulkier
-                }
-              } else if (item.key === 'Long Trip') {
-                if (bike.hasBigTrunk || bike.engineSize >= 250) {
-                  matchRating = 0.9;
-                } else if (bike.engineSize >= 150) {
-                  matchRating = 0.8;
-                } else if (bike.engineSize >= 125) {
-                  matchRating = 0.65;
-                } else {
-                  matchRating = 0.3;
-                }
-              } else if (item.key === 'Photo') {
-                const nameLower = bike.name.toLowerCase();
-                if (nameLower.includes('vespa') || nameLower.includes('scoopy') || nameLower.includes('filano')) {
-                  matchRating = 0.9;
-                } else {
-                  matchRating = 0.4;
-                }
-              }
-            }
-          }
-
-          weightedSum += matchRating * item.currentVal;
-        }
-      });
-
-      if (totalWeight > 0) {
-        destinationScore = weightedSum / totalWeight;
-      }
-
-      // Combine weights: 30% passenger compatibility, 70% destination alignment
-      // If no destination filter is active, it's driven entirely by passenger score
-      let combined = 1.0;
-      if (totalWeight > 0) {
-        combined = (passengerScore * 0.3) + (destinationScore * 0.7);
-      } else {
-        combined = passengerScore;
-      }
-
+      // --- ARITHMETIC MEAN OVER ALL 4 SCALES ---
+      const combined = (sCity + sLong + sPhoto + sPeople) / 4;
       const matchPercent = Math.min(100, Math.max(10, Math.round(combined * 100)));
 
       return {
@@ -300,7 +259,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
         percent: matchPercent
       };
     })
-    .filter(item => item.percent >= 40) // widen filter slightly so relevant options stay visible
+    .filter(item => item.percent >= 10) // broaden filter so all relevant bikes show sorted by score
     .sort((a, b) => b.percent - a.percent); // sort highest matching first
   }, [bikes, peopleCount, cityVal, longVal, photoVal]);
 
@@ -353,97 +312,88 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
           </div>
 
           {/* Body Content */}
-          <div className="p-4 md:p-5 overflow-y-auto custom-scrollbar flex-grow space-y-3">
+          <div className="p-4 md:p-5 overflow-y-auto custom-scrollbar flex-grow space-y-2.5">
             
             {/* Sliders Area */}
             <div className="space-y-2.5">
               
               {/* PASSENGERS SLIDER */}
-              <div className="space-y-1.5 p-3.5 bg-black/[0.015] border border-black/5 rounded-xl">
-                <div className="flex items-center justify-center mb-1 text-center w-full">
-                  <div className="flex items-center gap-2 text-foreground justify-center">
-                    <Users className="w-4 h-4 text-primary" />
-                    <span className="text-xs md:text-sm font-semibold select-none">
+              <div className="space-y-1.5 p-2.5 md:p-3 bg-black/[0.015] dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl relative">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary" />
+                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-foreground font-sans">
                       {dict("peopleLabel")}
                     </span>
                   </div>
+                  <span className="text-[9px] md:text-[10px] font-bold text-primary font-sans uppercase tracking-wider">
+                    {peopleCount === 2 ? (language === 'ru' ? 'пара' : 'couple') : (language === 'ru' ? 'соло путешественник' : 'solo traveler')}
+                  </span>
                 </div>
                 
-                <div className="relative pt-1">
-                  {/* Slider bar background track */}
-                  <div className="absolute h-1.5 w-full bg-black/10 rounded-full top-1/2 -translate-y-1/2" />
-                  
-                  {/* Slider filled track */}
-                  <div 
-                    className="absolute h-1.5 bg-primary rounded-full top-1/2 -translate-y-1/2"
-                    style={{ width: `${(peopleCount / 2) * 100}%` }}
+                {/* Visual Gradient Bar Container */}
+                <div className="relative h-2 md:h-2.5 w-full bg-black/10 dark:bg-white/10 rounded-full flex items-center pr-1 overflow-hidden">
+                  <motion.div 
+                    animate={{ width: peopleCount === 2 ? "100%" : "50%" }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="h-full rounded-full bg-gradient-to-r from-primary/40 to-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]"
                   />
+                  {/* End Indicator Dot */}
+                  <div className="absolute right-1 w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-black/20 dark:bg-white/20" />
                   
-                  {/* Real slider control */}
+                  {/* Real transparent range input overlaid over the whole container */}
                   <input
                     id="slider-people-count"
                     type="range"
-                    min="0"
+                    min="1"
                     max="2"
                     step="1"
                     value={peopleCount}
                     onChange={(e) => setPeopleCount(Number(e.target.value))}
-                    className="relative w-full h-5 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
-                    style={{
-                      WebkitAppearance: 'none'
-                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                   />
-                  
-                  {/* Slider visual ticks */}
-                  <div className="relative h-6 mt-1.5 text-muted">
-                    <span 
-                      onClick={() => setPeopleCount(1)}
-                      style={{ left: '50%', transform: 'translateX(-50%)' }}
-                      className={cn(
-                        "absolute transition-all duration-200 cursor-pointer font-bold whitespace-nowrap", 
-                        peopleCount === 1 ? "text-primary text-sm md:text-base scale-105" : "text-muted text-xs md:text-sm"
-                      )}
-                    >
-                      solo traveler
-                    </span>
-                    <span 
-                      onClick={() => setPeopleCount(2)}
-                      className={cn(
-                        "absolute right-1 transition-all duration-200 cursor-pointer font-bold whitespace-nowrap", 
-                        peopleCount === 2 ? "text-primary text-sm md:text-base scale-105" : "text-muted text-xs md:text-sm"
-                      )}
-                    >
-                      couple
-                    </span>
-                  </div>
                 </div>
               </div>
 
-
               {/* DESTINATIONS LABELED SLIDERS */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-center mb-1 text-center w-full">
-                  <div className="flex items-center gap-2 text-foreground justify-center">
-                    <Compass className="w-4 h-4 text-primary" />
-                    <span className="text-xs md:text-sm font-semibold select-none">
-                      {dict("whereTo")}
-                    </span>
-                  </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-[8px] md:text-[10px] font-black text-muted uppercase tracking-[0.25em]">{dict("whereTo")}</h3>
+                  <div className="h-px flex-grow ml-3 bg-border/20" />
                 </div>
 
-                <div className="grid grid-cols-1 gap-1">
+                <div className="grid grid-cols-1 gap-2">
                   
                   {/* CITY / BEACH SLIDER */}
-                  <div className="p-2 bg-black/[0.015] border border-black/5 rounded-xl group hover:bg-black/[0.03] transition-colors">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-1.5 text-foreground group-hover:text-foreground transition-colors">
-                        <MapPin className="w-4 h-4 text-primary" />
-                        {renderLabel("cityLabel")}
+                  <div className="space-y-1.5 p-2.5 md:p-3 bg-black/[0.015] dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MapPin className={cn("w-3.5 h-3.5 md:w-4 md:h-4", cityVal > 0 ? "text-primary" : "text-muted")} />
+                        <span className={cn("text-[10px] md:text-xs font-bold uppercase tracking-widest font-sans", cityVal > 0 ? "text-foreground" : "text-muted")}>
+                          {dict("cityLabel").replace(/\s*\(.*?\)\s*/g, '').trim()}
+                        </span>
                       </div>
+                      <span className="text-[9px] md:text-[10px] font-bold text-primary font-sans">
+                        {cityVal}%
+                      </span>
                     </div>
-                    <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
-                      <div className="absolute h-1.5 bg-primary rounded-full" style={{ width: `${cityVal}%` }} />
+                    
+                    {/* Visual Gradient Bar Container */}
+                    <div className="relative h-2 md:h-2.5 w-full bg-black/10 dark:bg-white/10 rounded-full flex items-center pr-1">
+                      <motion.div 
+                        animate={{ width: `${cityVal}%` }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className={cn(
+                          "h-full rounded-full bg-gradient-to-r transition-all duration-300",
+                          cityVal > 0 
+                            ? "from-primary/40 to-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]" 
+                            : "from-muted/10 to-muted/20"
+                        )}
+                      />
+                      {/* End Indicator Dot */}
+                      <div className="absolute right-1 w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-black/20 dark:bg-white/20" />
+                      
+                      {/* Real transparent range input overlaid over the whole container */}
                       <input
                         id="slider-city-priority"
                         type="range"
@@ -452,22 +402,41 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                         step="25"
                         value={cityVal}
                         onChange={(e) => setCityVal(Number(e.target.value))}
-                        className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                       />
                     </div>
                   </div>
 
                   {/* LONG TRIP SLIDER */}
-                  <div className="p-2 bg-black/[0.015] border border-black/5 rounded-xl group hover:bg-black/[0.03] transition-colors">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-1.5 text-foreground group-hover:text-foreground transition-colors">
-                        <Compass className="w-4 h-4 text-primary" />
-                        {renderLabel("longTripLabel")}
+                  <div className="space-y-1.5 p-2.5 md:p-3 bg-black/[0.015] dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Compass className={cn("w-3.5 h-3.5 md:w-4 md:h-4", longVal > 0 ? "text-primary" : "text-muted")} />
+                        <span className={cn("text-[10px] md:text-xs font-bold uppercase tracking-widest font-sans", longVal > 0 ? "text-foreground" : "text-muted")}>
+                          {dict("longTripLabel").replace(/\s*\(.*?\)\s*/g, '').trim()}
+                        </span>
                       </div>
+                      <span className="text-[9px] md:text-[10px] font-bold text-primary font-sans">
+                        {longVal}%
+                      </span>
                     </div>
-                    <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
-                      <div className="absolute h-1.5 bg-primary rounded-full" style={{ width: `${longVal}%` }} />
+                    
+                    {/* Visual Gradient Bar Container */}
+                    <div className="relative h-2 md:h-2.5 w-full bg-black/10 dark:bg-white/10 rounded-full flex items-center pr-1">
+                      <motion.div 
+                        animate={{ width: `${longVal}%` }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className={cn(
+                          "h-full rounded-full bg-gradient-to-r transition-all duration-300",
+                          longVal > 0 
+                            ? "from-primary/40 to-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]" 
+                            : "from-muted/10 to-muted/20"
+                        )}
+                      />
+                      {/* End Indicator Dot */}
+                      <div className="absolute right-1 w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-black/20 dark:bg-white/20" />
+                      
+                      {/* Real transparent range input overlaid over the whole container */}
                       <input
                         id="slider-longtrip-priority"
                         type="range"
@@ -476,22 +445,41 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                         step="25"
                         value={longVal}
                         onChange={(e) => setLongVal(Number(e.target.value))}
-                        className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                       />
                     </div>
                   </div>
 
                   {/* PHOTO SLIDER */}
-                  <div className="p-2 bg-black/[0.015] border border-black/5 rounded-xl group hover:bg-black/[0.03] transition-colors">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-1.5 text-foreground group-hover:text-foreground transition-colors">
-                        <Camera className="w-4 h-4 text-primary" />
-                        {renderLabel("photoLabel")}
+                  <div className="space-y-1.5 p-2.5 md:p-3 bg-black/[0.015] dark:bg-white/5 border border-black/5 dark:border-white/5 rounded-xl relative">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Camera className={cn("w-3.5 h-3.5 md:w-4 md:h-4", photoVal > 0 ? "text-primary" : "text-muted")} />
+                        <span className={cn("text-[10px] md:text-xs font-bold uppercase tracking-widest font-sans", photoVal > 0 ? "text-foreground" : "text-muted")}>
+                          {dict("photoLabel").replace(/\s*\(.*?\)\s*/g, '').trim()}
+                        </span>
                       </div>
+                      <span className="text-[9px] md:text-[10px] font-bold text-primary font-sans">
+                        {photoVal}%
+                      </span>
                     </div>
-                    <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
-                      <div className="absolute h-1.5 bg-primary rounded-full" style={{ width: `${photoVal}%` }} />
+                    
+                    {/* Visual Gradient Bar Container */}
+                    <div className="relative h-2 md:h-2.5 w-full bg-black/10 dark:bg-white/10 rounded-full flex items-center pr-1">
+                      <motion.div 
+                        animate={{ width: `${photoVal}%` }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className={cn(
+                          "h-full rounded-full bg-gradient-to-r transition-all duration-300",
+                          photoVal > 0 
+                            ? "from-primary/40 to-primary shadow-[0_0_10px_rgba(var(--primary-rgb),0.2)]" 
+                            : "from-muted/10 to-muted/20"
+                        )}
+                      />
+                      {/* End Indicator Dot */}
+                      <div className="absolute right-1 w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-black/20 dark:bg-white/20" />
+                      
+                      {/* Real transparent range input overlaid over the whole container */}
                       <input
                         id="slider-photo-priority"
                         type="range"
@@ -500,7 +488,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                         step="25"
                         value={photoVal}
                         onChange={(e) => setPhotoVal(Number(e.target.value))}
-                        className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
                       />
                     </div>
                   </div>
