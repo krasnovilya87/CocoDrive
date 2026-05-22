@@ -69,12 +69,12 @@ const AppContent = () => {
 
     const autoSeedBikes = async () => {
       try {
-        const isSynced = localStorage.getItem('bikes_price_synced_may_2026_v3_couple');
+        const isSynced = localStorage.getItem('bikes_price_synced_may_2026_v4_unique_images');
         if (isSynced !== 'true') {
-          console.log('[autoSeed] Change in characteristics detected. Seeding new attributes to Firestore...');
+          console.log('[autoSeed] New beautiful bike images detected. Seeding new attribute constants to Firestore...');
           await seedBikes();
-          localStorage.setItem('bikes_price_synced_may_2026_v3_couple', 'true');
-          console.log('[autoSeed] New attributes successfully synced to Firestore!');
+          localStorage.setItem('bikes_price_synced_may_2026_v4_unique_images', 'true');
+          console.log('[autoSeed] New attribute constants successfully synced to Firestore!');
         }
       } catch (err) {
         console.error('Error auto seeding bikes:', err);

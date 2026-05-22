@@ -33,7 +33,10 @@ export const BikeCard: React.FC<BikeCardProps> = ({ bike }) => {
       >
         <div className="relative aspect-square md:aspect-[4/3] overflow-hidden">
           <img
-            src={bike.image}
+            src={(bike.images && bike.images.length > 0) ? bike.images[0] : bike.image}
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800";
+            }}
             alt={bike.name}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
             referrerPolicy="no-referrer"

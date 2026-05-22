@@ -28,60 +28,67 @@ const filterDictObj: Record<string, Record<string, string>> = {
     de: "Finden Sie Ihr ideales Motorrad in 10 Sekunden"
   },
   peopleLabel: {
-    en: "How many passengers?",
-    ru: "Сколько людей поедет?",
-    id: "Berapa banyak orang?",
-    fr: "Combien de personnes ?",
-    de: "Wie viele Personen?"
+    en: "For whom?",
+    ru: "Для кого?",
+    id: "Untuk siapa?",
+    fr: "Pour qui ?",
+    de: "Für wen?"
+  },
+  person0: {
+    en: "any",
+    ru: "любой",
+    id: "siapa saja",
+    fr: "pour tous",
+    de: "alle"
   },
   person1: {
-    en: "1 Person",
-    ru: "1 Человек",
-    id: "1 Orang",
-    fr: "1 Personne",
+    en: "1 person",
+    ru: "1 человек",
+    id: "1 orang",
+    fr: "1 personne",
     de: "1 Person"
   },
   person2: {
-    en: "2 People (Couple)",
-    ru: "2 Человека (Пара)",
-    id: "2 Человека (Пара)",
-    fr: "2 Personnes (Couple)",
-    de: "2 Personen (Paar)"
+    en: "2 people",
+    ru: "2 человека",
+    id: "2 orang",
+    fr: "2 personnes",
+    de: "2 Personen"
   },
   whereTo: {
-    en: "Where will you ride?",
-    ru: "Куда планируете ездить?",
-    id: "Ke mana Anda akan berkendara?",
-    fr: "Où allez-vous conduire ?",
-    de: "Wohin werden Sie fahren?"
+    en: "For what purpose?",
+    ru: "Для чего?",
+    id: "Untuk apa?",
+    fr: "Pour quel usage ?",
+    de: "Wofür?"
   },
   cityLabel: {
-    en: "City & Beaches (cafes, shortcuts)",
+    en: "City & beaches (cafes, shortcuts)",
     ru: "City (пляж, кафе, узкие объезды)",
     id: "Kota & Pantai (kafe, jalan pintas)",
     fr: "Ville & Plages (cafés, raccourcis)",
-    de: "Stadt & Strände (Cafés, Abkürzungen)"
+    de: "Stadt & Strände (cafés, abkürzungen)"
   },
   longTripLabel: {
-    en: "Long Trips (waterfalls, long roads)",
+    en: "Long trips (waterfalls, long roads)",
     ru: "Long Trip (водопады, ровные трассы)",
     id: "Perjalanan Jauh (air terjun, jalan panjang)",
     fr: "Longs trajets (cascades, longues routes)",
-    de: "Langstrecken (Wasserfälle, lange Straßen)"
+    de: "Langstrecken (wasserfälle, lange straßen)"
   },
   mountLabel: {
     en: "Mountains (steep climbs, volcanoes)",
     ru: "Mountains (вулкан, крутые подъемы)",
     id: "Pegunungan (tanjakan curam, gunung berapi)",
     fr: "Montagnes (montées raides, volcans)",
-    de: "Berge (steile Anstiege, Vulkane)"
+    de: "Berge (steile anstiege, vulkane)"
   },
   photoLabel: {
-    en: "Aesthetics & Photo (retro style)",
+    en: "Aesthetics & photo (retro style)",
     ru: "Photo (эстетика, фотосессии)",
     id: "Estetika / Pemotretan (gaya retro)",
     fr: "Esthétique / Séances photo (style rétro)",
-    de: "Ästhetik / Fotoshootings (Retro-Stil)"
+    de: "Ästhetik / Fotoshootings (retro-stil)"
   },
   matchingBikes: {
     en: "Recommended Bikes:",
@@ -124,20 +131,6 @@ const filterDictObj: Record<string, Record<string, string>> = {
     id: "Mesin",
     fr: "Moteur",
     de: "Motor"
-  },
-  perMonth: {
-    en: "month",
-    ru: "месяц",
-    id: "bulan",
-    fr: "mois",
-    de: "Monat"
-  },
-  perDay30: {
-    en: "day (30+ days)",
-    ru: "день (от 30 дн)",
-    id: "hari (30+ hari)",
-    fr: "jour (30+ jrs)",
-    de: "Tag (30+ Tage)"
   }
 };
 
@@ -147,11 +140,11 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
   const [bikes, setBikes] = useState<Bike[]>([]);
 
   // User slider states
-  const [peopleCount, setPeopleCount] = useState<number>(1); // Snap 1 or 2
+  const [peopleCount, setPeopleCount] = useState<number>(1); // 0 = any, 1 = 1 person (default middle), 2 = 2 people
   const [cityVal, setCityVal] = useState<number>(50);
-  const [longVal, setLongVal] = useState<number>(0);
-  const [mountVal, setMountVal] = useState<number>(0);
-  const [photoVal, setPhotoVal] = useState<number>(0);
+  const [longVal, setLongVal] = useState<number>(50);
+  const [mountVal, setMountVal] = useState<number>(50);
+  const [photoVal, setPhotoVal] = useState<number>(50);
 
   // Sync bikes list
   useEffect(() => {
@@ -337,14 +330,14 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
           {/* Header */}
           <div className="relative p-4 md:p-5 border-b border-white/5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner font-sans">
-                <Sparkles className="w-5.5 h-5.5 md:w-6 md:h-6 animate-pulse" />
+              <div className="w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
+                <Sparkles className="w-5 h-5 md:w-5.5 md:h-5.5" />
               </div>
               <div>
-                <h3 id="smart-filter-title" className="text-lg md:text-2xl font-display font-black tracking-tight text-foreground">
+                <h3 id="smart-filter-title" className="text-lg md:text-xl font-display font-semibold tracking-tight text-foreground">
                   {dict("title")}
                 </h3>
-                <p className="text-[11px] md:text-xs font-bold text-muted uppercase tracking-wider mt-0.5">
+                <p className="text-[11px] md:text-xs text-muted mt-0.5 font-normal">
                   {dict("subtitle")}
                 </p>
               </div>
@@ -367,44 +360,45 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
               {/* PASSENGERS SLIDER */}
               <div className="space-y-1.5 p-3 bg-white/[0.02] border border-white/5 rounded-xl">
                 <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2.5 text-foreground">
+                  <div className="flex items-center gap-2 text-foreground">
                     <Users className="w-4 h-4 text-primary" />
-                    <span className="text-xs md:text-sm font-extrabold uppercase tracking-wider">
+                    <span className="text-xs md:text-sm font-medium">
                       {dict("peopleLabel")}
                     </span>
                   </div>
-                  <span className="text-xs md:text-sm font-black text-primary bg-primary/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    {peopleCount === 1 ? dict("person1") : dict("person2")}
+                  <span className="text-xs md:text-[11px] font-medium text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+                    {peopleCount === 0 ? dict("person0") : peopleCount === 1 ? dict("person1") : dict("person2")}
                   </span>
                 </div>
                 
                 <div className="relative pt-1">
                   {/* Slider bar background track */}
-                  <div className="absolute h-2 w-full bg-white/10 rounded-full top-1/2 -translate-y-1/2" />
+                  <div className="absolute h-1.5 w-full bg-white/10 rounded-full top-1/2 -translate-y-1/2" />
                   
                   {/* Slider filled track */}
                   <div 
-                    className="absolute h-2 bg-primary/60 rounded-full top-1/2 -translate-y-1/2"
-                    style={{ width: peopleCount === 2 ? '100%' : '0%' }}
+                    className="absolute h-1.5 bg-primary/60 rounded-full top-1/2 -translate-y-1/2"
+                    style={{ width: `${(peopleCount / 2) * 100}%` }}
                   />
                   
                   {/* Real slider control */}
                   <input
                     id="slider-people-count"
                     type="range"
-                    min="1"
+                    min="0"
                     max="2"
                     step="1"
                     value={peopleCount}
                     onChange={(e) => setPeopleCount(Number(e.target.value))}
-                    className="relative w-full h-6 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
+                    className="relative w-full h-5 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
                     style={{
                       WebkitAppearance: 'none'
                     }}
                   />
                   
                   {/* Slider visual ticks */}
-                  <div className="flex justify-between text-[10px] md:text-xs font-bold text-muted/60 uppercase tracking-widest px-1 mt-0.5 font-mono">
+                  <div className="flex justify-between text-[10px] text-muted/50 px-1 mt-0.5">
+                    <span>{language === 'ru' ? 'неважно' : 'any'}</span>
                     <span>1 {language === 'ru' ? 'чел' : 'pax'}</span>
                     <span>2 {language === 'ru' ? 'чел' : 'pax'}</span>
                   </div>
@@ -416,7 +410,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 pl-1 mb-0.5">
                   <div className="h-px flex-grow bg-white/5" />
-                  <span className="text-[11px] md:text-xs font-black text-muted uppercase tracking-[0.2em] whitespace-nowrap">
+                  <span className="text-[10px] md:text-xs font-semibold text-muted/60 tracking-wider">
                     {dict("whereTo")}
                   </span>
                   <div className="h-px bg-white/5 flex-grow" />
@@ -428,18 +422,15 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                   <div className="p-2 bg-white/[0.01] border border-white/5 rounded-xl group hover:bg-white/[0.02] transition-colors">
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground transition-colors">
-                        <MapPin className="w-4 h-4 text-[#3b82f6]" />
-                        <span className="text-xs md:text-sm font-extrabold uppercase tracking-wide">
+                        <MapPin className="w-4 h-4 text-primary" />
+                        <span className="text-xs md:text-sm font-medium">
                           {dict("cityLabel")}
                         </span>
                       </div>
-                      <span className="text-xs md:text-sm font-black text-[#3b82f6] capitalize">
-                        {getIntensityLabel(cityVal)}
-                      </span>
                     </div>
                     <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-2 w-full bg-white/10 rounded-full" />
-                      <div className="absolute h-2 bg-[#3b82f6]/40 rounded-full" style={{ width: `${cityVal}%` }} />
+                      <div className="absolute h-1.5 w-full bg-white/10 rounded-full" />
+                      <div className="absolute h-1.5 bg-primary/40 rounded-full" style={{ width: `${cityVal}%` }} />
                       <input
                         id="slider-city-priority"
                         type="range"
@@ -447,7 +438,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                         max="100"
                         value={cityVal}
                         onChange={(e) => setCityVal(Number(e.target.value))}
-                        className="relative w-full h-5 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-[#3b82f6]"
+                        className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
                       />
                     </div>
                   </div>
@@ -456,18 +447,15 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                   <div className="p-2 bg-white/[0.01] border border-white/5 rounded-xl group hover:bg-white/[0.02] transition-colors">
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground transition-colors">
-                        <Compass className="w-4 h-4 text-[#eab308]" />
-                        <span className="text-xs md:text-sm font-extrabold uppercase tracking-wide">
+                        <Compass className="w-4 h-4 text-primary" />
+                        <span className="text-xs md:text-sm font-medium">
                           {dict("longTripLabel")}
                         </span>
                       </div>
-                      <span className="text-xs md:text-sm font-black text-[#eab308] capitalize">
-                        {getIntensityLabel(longVal)}
-                      </span>
                     </div>
                     <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-2 w-full bg-white/10 rounded-full" />
-                      <div className="absolute h-2 bg-[#eab308]/40 rounded-full" style={{ width: `${longVal}%` }} />
+                      <div className="absolute h-1.5 w-full bg-white/10 rounded-full" />
+                      <div className="absolute h-1.5 bg-primary/40 rounded-full" style={{ width: `${longVal}%` }} />
                       <input
                         id="slider-longtrip-priority"
                         type="range"
@@ -475,7 +463,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                         max="100"
                         value={longVal}
                         onChange={(e) => setLongVal(Number(e.target.value))}
-                        className="relative w-full h-5 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-[#eab308]"
+                        className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
                       />
                     </div>
                   </div>
@@ -484,18 +472,15 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                   <div className="p-2 bg-white/[0.01] border border-white/5 rounded-xl group hover:bg-white/[0.02] transition-colors">
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground transition-colors">
-                        <Mountain className="w-4 h-4 text-[#10b981]" />
-                        <span className="text-xs md:text-sm font-extrabold uppercase tracking-wide">
+                        <Mountain className="w-4 h-4 text-primary" />
+                        <span className="text-xs md:text-sm font-medium">
                           {dict("mountLabel")}
                         </span>
                       </div>
-                      <span className="text-xs md:text-sm font-black text-[#10b981] capitalize">
-                        {getIntensityLabel(mountVal)}
-                      </span>
                     </div>
                     <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-2 w-full bg-white/10 rounded-full" />
-                      <div className="absolute h-2 bg-[#10b981]/40 rounded-full" style={{ width: `${mountVal}%` }} />
+                      <div className="absolute h-1.5 w-full bg-white/10 rounded-full" />
+                      <div className="absolute h-1.5 bg-primary/40 rounded-full" style={{ width: `${mountVal}%` }} />
                       <input
                         id="slider-mountains-priority"
                         type="range"
@@ -503,7 +488,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                         max="100"
                         value={mountVal}
                         onChange={(e) => setMountVal(Number(e.target.value))}
-                        className="relative w-full h-5 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-[#10b981]"
+                        className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
                       />
                     </div>
                   </div>
@@ -512,18 +497,15 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                   <div className="p-2 bg-white/[0.01] border border-white/5 rounded-xl group hover:bg-white/[0.02] transition-colors">
                     <div className="flex items-center justify-between mb-0.5">
                       <div className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground transition-colors">
-                        <Camera className="w-4 h-4 text-[#ec4899]" />
-                        <span className="text-xs md:text-sm font-extrabold uppercase tracking-wide">
+                        <Camera className="w-4 h-4 text-primary" />
+                        <span className="text-xs md:text-sm font-medium">
                           {dict("photoLabel")}
                         </span>
                       </div>
-                      <span className="text-xs md:text-sm font-black text-[#ec4899] capitalize">
-                        {getIntensityLabel(photoVal)}
-                      </span>
                     </div>
                     <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-2 w-full bg-white/10 rounded-full" />
-                      <div className="absolute h-2 bg-[#ec4899]/40 rounded-full" style={{ width: `${photoVal}%` }} />
+                      <div className="absolute h-1.5 w-full bg-white/10 rounded-full" />
+                      <div className="absolute h-1.5 bg-primary/40 rounded-full" style={{ width: `${photoVal}%` }} />
                       <input
                         id="slider-photo-priority"
                         type="range"
@@ -531,7 +513,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                         max="100"
                         value={photoVal}
                         onChange={(e) => setPhotoVal(Number(e.target.value))}
-                        className="relative w-full h-5 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-[#ec4899]"
+                        className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
                       />
                     </div>
                   </div>
@@ -544,10 +526,10 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
             {/* RECOMMENDED MATCHING BIKES LIST */}
             <div className="space-y-1.5 pt-1">
               <div className="flex items-center justify-between px-1 mb-0.5">
-                <span className="text-[11px] md:text-xs font-black text-muted uppercase tracking-[0.2em]">
+                <span className="text-[10px] md:text-xs font-semibold text-muted tracking-wider">
                   {dict("matchingBikes")}
                 </span>
-                <span className="text-xs md:text-sm font-bold text-muted/70 font-mono">
+                <span className="text-xs text-muted/60 font-medium">
                   {matchedBikesWithScores.length} {language === 'ru' ? 'найдено' : 'found'}
                 </span>
               </div>
@@ -576,7 +558,10 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                             {/* Spec miniature image */}
                             <div className="w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden bg-white/5 shrink-0 border border-white/5">
                               <img 
-                                src={bike.image} 
+                                src={(bike.images && bike.images.length > 0) ? bike.images[0] : bike.image} 
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800";
+                                }}
                                 alt={bike.name} 
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                 referrerPolicy="no-referrer"
@@ -584,14 +569,11 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                             </div>
                             
                             <div>
-                              <h4 className="text-[13px] md:text-sm font-black text-foreground group-hover:text-primary transition-colors leading-tight">
+                              <h4 className="text-[13px] md:text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
                                 {bike.name}
                               </h4>
                               <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[9px] md:text-[10px] font-extrabold text-muted bg-white/5 px-2 py-0.5 rounded leading-none whitespace-nowrap">
-                                  {bike.engineSize}CC
-                                </span>
-                                <span className="text-[10px] md:text-xs font-black text-emerald-500 font-mono whitespace-nowrap">
+                                <span className="text-[10px] md:text-xs font-semibold text-emerald-500 font-mono whitespace-nowrap">
                                   {percent}% {dict("matchRate")}
                                 </span>
                               </div>
@@ -600,12 +582,9 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
 
                           <div className="flex items-center gap-3">
                             <div className="text-right">
-                              <span className="text-xs md:text-base font-black text-foreground font-mono leading-none block">
-                                {formatPrice(dailyRateFrom30)}
+                              <span className="text-xs md:text-sm font-semibold text-foreground font-mono leading-none block">
+                                {formatPrice(dailyRateFrom30)} Rp
                               </span>
-                              <p className="text-[9px] md:text-[10px] text-muted font-bold uppercase tracking-wider leading-none mt-1 font-mono">
-                                IDR / {dict("perDay30")}
-                              </p>
                             </div>
                             <div className="w-7 h-7 bg-white/5 group-hover:bg-primary group-hover:text-white border border-white/5 group-hover:border-primary/30 flex items-center justify-center text-muted transition-all rounded-lg">
                               <ArrowRight className="w-4 h-4" />
@@ -635,7 +614,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
             <button
               id="smart-filter-bottom-close"
               onClick={onClose}
-              className="w-full h-9 md:h-10 bg-white text-black active:scale-98 hover:opacity-90 rounded-xl font-display font-black text-xs md:text-sm transition-all shadow-md"
+              className="w-full h-9 md:h-10 bg-white text-black active:scale-98 hover:opacity-90 rounded-xl font-display font-semibold text-xs md:text-sm transition-all shadow-md"
             >
               {dict("close")}
             </button>

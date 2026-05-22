@@ -56,6 +56,9 @@ export const Hero = () => {
       <div className="absolute inset-0 z-0">
         <img
           src={heroBg}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80&w=1600";
+          }}
           alt="Explore Bali on a scooter"
           className="w-full h-full object-cover scale-105 animate-subtle-zoom"
           referrerPolicy="no-referrer"
