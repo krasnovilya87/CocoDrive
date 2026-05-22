@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Users, MapPin, Compass, Mountain, Camera, Sparkles, Check, Heart, ArrowRight } from 'lucide-react';
+import { X, Users, MapPin, Compass, Camera, Sparkles, Check, Heart, ArrowRight } from 'lucide-react';
 import { Bike } from '../types';
 import { useLanguage } from '../LanguageContext';
 import { useRental } from '../RentalContext';
@@ -63,32 +63,25 @@ const filterDictObj: Record<string, Record<string, string>> = {
     de: "Wofür?"
   },
   cityLabel: {
-    en: "City & beaches (cafes, shortcuts)",
-    ru: "City (пляж, кафе, узкие объезды)",
-    id: "Kota & Pantai (kafe, jalan pintas)",
-    fr: "Ville & Plages (cafés, raccourcis)",
-    de: "Stadt & Strände (cafés, abkürzungen)"
+    en: "City & beaches",
+    ru: "City",
+    id: "Kota & Pantai",
+    fr: "Ville & Plages",
+    de: "Stadt & Strände"
   },
   longTripLabel: {
-    en: "Long trips (waterfalls, long roads)",
-    ru: "Long Trip (водопады, ровные трассы)",
-    id: "Perjalanan Jauh (air terjun, jalan panjang)",
-    fr: "Longs trajets (cascades, longues routes)",
-    de: "Langstrecken (wasserfälle, lange straßen)"
-  },
-  mountLabel: {
-    en: "Mountains (steep climbs, volcanoes)",
-    ru: "Mountains (вулкан, крутые подъемы)",
-    id: "Pegunungan (tanjakan curam, gunung berapi)",
-    fr: "Montagnes (montées raides, volcans)",
-    de: "Berge (steile anstiege, vulkane)"
+    en: "Long trips",
+    ru: "Long Trip",
+    id: "Perjalanan Jauh",
+    fr: "Longs trajets",
+    de: "Langstrecken"
   },
   photoLabel: {
-    en: "Aesthetics & photo (retro style)",
-    ru: "Photo (эстетика, фотосессии)",
-    id: "Estetika / Pemotretan (gaya retro)",
-    fr: "Esthétique / Séances photo (style rétro)",
-    de: "Ästhetik / Fotoshootings (retro-stil)"
+    en: "Aesthetics & photo",
+    ru: "Photo",
+    id: "Estetika / Pemotretan",
+    fr: "Esthétique / Séances photo",
+    de: "Ästhetik / Fotoshootings"
   },
   matchingBikes: {
     en: "Recommended Bikes:",
@@ -143,7 +136,6 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
   const [peopleCount, setPeopleCount] = useState<number>(1); // 0 = any, 1 = 1 person (default middle), 2 = 2 people
   const [cityVal, setCityVal] = useState<number>(50);
   const [longVal, setLongVal] = useState<number>(50);
-  const [mountVal, setMountVal] = useState<number>(50);
   const [photoVal, setPhotoVal] = useState<number>(50);
 
   // Sync bikes list
@@ -187,6 +179,22 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
     return filterDictObj[key]?.[language] || filterDictObj[key]?.en || key;
   };
 
+  const renderLabel = (labelKey: string) => {
+    const fullText = dict(labelKey);
+    // Remove any leftover parentheses dynamically for absolute safety
+    const cleanedText = fullText.replace(/\s*\(.*?\)\s*/g, '').trim();
+    const isLongTrip = labelKey === 'longTripLabel';
+    
+    return (
+      <span className={cn(
+        "text-xs md:text-sm text-foreground",
+        isLongTrip ? "font-bold text-[#111827]" : "font-semibold text-foreground/90"
+      )}>
+        {cleanedText}
+      </span>
+    );
+  };
+
   // Label text helpers for sliders
   const getIntensityLabel = (val: number): string => {
     if (val === 0) return language === 'ru' ? 'Неважно' : 'Not needed';
@@ -225,7 +233,6 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
       const items = [
         { key: 'City', currentVal: cityVal },
         { key: 'Long Trip', currentVal: longVal },
-        { key: 'Mountains', currentVal: mountVal },
         { key: 'Photo', currentVal: photoVal }
       ];
 
@@ -234,43 +241,37 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
           totalWeight += item.currentVal;
           let matchRating = 0.4; // baseline
 
-          const isExplicit = bike.bestFor?.includes(item.key);
-          if (isExplicit) {
-            matchRating = 1.0;
+          if (bike.bestForPercentages && bike.bestForPercentages[item.key] !== undefined) {
+            matchRating = bike.bestForPercentages[item.key] / 100;
           } else {
-            // Contextual capabilities fallback
-            if (item.key === 'City') {
-              if (bike.engineSize <= 160) {
-                matchRating = 0.9; // nimble
-              } else {
-                matchRating = 0.75; // a bit bulkier
-              }
-            } else if (item.key === 'Long Trip') {
-              if (bike.hasBigTrunk || bike.engineSize >= 250) {
-                matchRating = 0.9;
-              } else if (bike.engineSize >= 150) {
-                matchRating = 0.8;
-              } else if (bike.engineSize >= 125) {
-                matchRating = 0.65;
-              } else {
-                matchRating = 0.3;
-              }
-            } else if (item.key === 'Mountains') {
-              if (bike.engineSize >= 250) {
-                matchRating = 1.0;
-              } else if (bike.engineSize >= 150) {
-                matchRating = 0.8;
-              } else if (bike.engineSize >= 125) {
-                matchRating = 0.5;
-              } else {
-                matchRating = 0.15;
-              }
-            } else if (item.key === 'Photo') {
-              const nameLower = bike.name.toLowerCase();
-              if (nameLower.includes('vespa') || nameLower.includes('scoopy') || nameLower.includes('filano')) {
-                matchRating = 0.9;
-              } else {
-                matchRating = 0.4;
+            const isExplicit = bike.bestFor?.includes(item.key);
+            if (isExplicit) {
+              matchRating = 1.0;
+            } else {
+              // Contextual capabilities fallback
+              if (item.key === 'City') {
+                if (bike.engineSize <= 160) {
+                  matchRating = 0.9; // nimble
+                } else {
+                  matchRating = 0.75; // a bit bulkier
+                }
+              } else if (item.key === 'Long Trip') {
+                if (bike.hasBigTrunk || bike.engineSize >= 250) {
+                  matchRating = 0.9;
+                } else if (bike.engineSize >= 150) {
+                  matchRating = 0.8;
+                } else if (bike.engineSize >= 125) {
+                  matchRating = 0.65;
+                } else {
+                  matchRating = 0.3;
+                }
+              } else if (item.key === 'Photo') {
+                const nameLower = bike.name.toLowerCase();
+                if (nameLower.includes('vespa') || nameLower.includes('scoopy') || nameLower.includes('filano')) {
+                  matchRating = 0.9;
+                } else {
+                  matchRating = 0.4;
+                }
               }
             }
           }
@@ -301,7 +302,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
     })
     .filter(item => item.percent >= 40) // widen filter slightly so relevant options stay visible
     .sort((a, b) => b.percent - a.percent); // sort highest matching first
-  }, [bikes, peopleCount, cityVal, longVal, mountVal, photoVal]);
+  }, [bikes, peopleCount, cityVal, longVal, photoVal]);
 
   if (!isOpen) return null;
 
@@ -314,7 +315,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/80 backdrop-blur-xl"
+          className="absolute inset-0 bg-black/40 backdrop-blur-md"
         />
 
         {/* Modal Window Container */}
@@ -322,13 +323,13 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
           initial={{ opacity: 0, scale: 0.95, y: 30 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 30 }}
-          className="relative w-full max-w-xl bg-surface/90 backdrop-blur-2xl rounded-[24px] sm:rounded-[32px] border border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)] overflow-hidden flex flex-col max-h-[92vh] md:max-h-[85vh]"
+          className="relative w-full max-w-xl bg-surface rounded-[24px] sm:rounded-[32px] border border-black/10 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col max-h-[92vh] md:max-h-[85vh]"
         >
           {/* Top glowing design element */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-primary/10 blur-[50px] rounded-full pointer-events-none" />
 
           {/* Header */}
-          <div className="relative p-4 md:p-5 border-b border-white/5 flex items-center justify-between shrink-0">
+          <div className="relative p-4 md:p-5 border-b border-black/5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 md:w-11 md:h-11 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shadow-inner">
                 <Sparkles className="w-5 h-5 md:w-5.5 md:h-5.5" />
@@ -345,7 +346,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
             <button 
               id="smart-filter-close-btn"
               onClick={onClose}
-              className="p-2 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/5 active:scale-90"
+              className="p-2 bg-black/5 hover:bg-black/10 rounded-full transition-all border border-black/5 active:scale-90"
             >
               <X className="w-5 h-5 text-muted" />
             </button>
@@ -358,26 +359,23 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
             <div className="space-y-2.5">
               
               {/* PASSENGERS SLIDER */}
-              <div className="space-y-1.5 p-3 bg-white/[0.02] border border-white/5 rounded-xl">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2 text-foreground">
+              <div className="space-y-1.5 p-3.5 bg-black/[0.015] border border-black/5 rounded-xl">
+                <div className="flex items-center justify-center mb-1 text-center w-full">
+                  <div className="flex items-center gap-2 text-foreground justify-center">
                     <Users className="w-4 h-4 text-primary" />
-                    <span className="text-xs md:text-sm font-medium">
+                    <span className="text-xs md:text-sm font-semibold select-none">
                       {dict("peopleLabel")}
                     </span>
                   </div>
-                  <span className="text-xs md:text-[11px] font-medium text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
-                    {peopleCount === 0 ? dict("person0") : peopleCount === 1 ? dict("person1") : dict("person2")}
-                  </span>
                 </div>
                 
                 <div className="relative pt-1">
                   {/* Slider bar background track */}
-                  <div className="absolute h-1.5 w-full bg-white/10 rounded-full top-1/2 -translate-y-1/2" />
+                  <div className="absolute h-1.5 w-full bg-black/10 rounded-full top-1/2 -translate-y-1/2" />
                   
                   {/* Slider filled track */}
                   <div 
-                    className="absolute h-1.5 bg-primary/60 rounded-full top-1/2 -translate-y-1/2"
+                    className="absolute h-1.5 bg-primary rounded-full top-1/2 -translate-y-1/2"
                     style={{ width: `${(peopleCount / 2) * 100}%` }}
                   />
                   
@@ -397,10 +395,26 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                   />
                   
                   {/* Slider visual ticks */}
-                  <div className="flex justify-between text-[10px] text-muted/50 px-1 mt-0.5">
-                    <span>{language === 'ru' ? 'неважно' : 'any'}</span>
-                    <span>1 {language === 'ru' ? 'чел' : 'pax'}</span>
-                    <span>2 {language === 'ru' ? 'чел' : 'pax'}</span>
+                  <div className="relative h-6 mt-1.5 text-muted">
+                    <span 
+                      onClick={() => setPeopleCount(1)}
+                      style={{ left: '50%', transform: 'translateX(-50%)' }}
+                      className={cn(
+                        "absolute transition-all duration-200 cursor-pointer font-bold whitespace-nowrap", 
+                        peopleCount === 1 ? "text-primary text-sm md:text-base scale-105" : "text-muted text-xs md:text-sm"
+                      )}
+                    >
+                      solo traveler
+                    </span>
+                    <span 
+                      onClick={() => setPeopleCount(2)}
+                      className={cn(
+                        "absolute right-1 transition-all duration-200 cursor-pointer font-bold whitespace-nowrap", 
+                        peopleCount === 2 ? "text-primary text-sm md:text-base scale-105" : "text-muted text-xs md:text-sm"
+                      )}
+                    >
+                      couple
+                    </span>
                   </div>
                 </div>
               </div>
@@ -408,34 +422,34 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
 
               {/* DESTINATIONS LABELED SLIDERS */}
               <div className="space-y-1.5">
-                <div className="flex items-center gap-2 pl-1 mb-0.5">
-                  <div className="h-px flex-grow bg-white/5" />
-                  <span className="text-[10px] md:text-xs font-semibold text-muted/60 tracking-wider">
-                    {dict("whereTo")}
-                  </span>
-                  <div className="h-px bg-white/5 flex-grow" />
+                <div className="flex items-center justify-center mb-1 text-center w-full">
+                  <div className="flex items-center gap-2 text-foreground justify-center">
+                    <Compass className="w-4 h-4 text-primary" />
+                    <span className="text-xs md:text-sm font-semibold select-none">
+                      {dict("whereTo")}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-1">
                   
                   {/* CITY / BEACH SLIDER */}
-                  <div className="p-2 bg-white/[0.01] border border-white/5 rounded-xl group hover:bg-white/[0.02] transition-colors">
+                  <div className="p-2 bg-black/[0.015] border border-black/5 rounded-xl group hover:bg-black/[0.03] transition-colors">
                     <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground transition-colors">
+                      <div className="flex items-center gap-1.5 text-foreground group-hover:text-foreground transition-colors">
                         <MapPin className="w-4 h-4 text-primary" />
-                        <span className="text-xs md:text-sm font-medium">
-                          {dict("cityLabel")}
-                        </span>
+                        {renderLabel("cityLabel")}
                       </div>
                     </div>
                     <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-1.5 w-full bg-white/10 rounded-full" />
-                      <div className="absolute h-1.5 bg-primary/40 rounded-full" style={{ width: `${cityVal}%` }} />
+                      <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
+                      <div className="absolute h-1.5 bg-primary rounded-full" style={{ width: `${cityVal}%` }} />
                       <input
                         id="slider-city-priority"
                         type="range"
                         min="0"
                         max="100"
+                        step="25"
                         value={cityVal}
                         onChange={(e) => setCityVal(Number(e.target.value))}
                         className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
@@ -444,23 +458,22 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                   </div>
 
                   {/* LONG TRIP SLIDER */}
-                  <div className="p-2 bg-white/[0.01] border border-white/5 rounded-xl group hover:bg-white/[0.02] transition-colors">
+                  <div className="p-2 bg-black/[0.015] border border-black/5 rounded-xl group hover:bg-black/[0.03] transition-colors">
                     <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground transition-colors">
+                      <div className="flex items-center gap-1.5 text-foreground group-hover:text-foreground transition-colors">
                         <Compass className="w-4 h-4 text-primary" />
-                        <span className="text-xs md:text-sm font-medium">
-                          {dict("longTripLabel")}
-                        </span>
+                        {renderLabel("longTripLabel")}
                       </div>
                     </div>
                     <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-1.5 w-full bg-white/10 rounded-full" />
-                      <div className="absolute h-1.5 bg-primary/40 rounded-full" style={{ width: `${longVal}%` }} />
+                      <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
+                      <div className="absolute h-1.5 bg-primary rounded-full" style={{ width: `${longVal}%` }} />
                       <input
                         id="slider-longtrip-priority"
                         type="range"
                         min="0"
                         max="100"
+                        step="25"
                         value={longVal}
                         onChange={(e) => setLongVal(Number(e.target.value))}
                         className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
@@ -468,49 +481,23 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                     </div>
                   </div>
 
-                  {/* MOUNTAINS SLIDER */}
-                  <div className="p-2 bg-white/[0.01] border border-white/5 rounded-xl group hover:bg-white/[0.02] transition-colors">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground transition-colors">
-                        <Mountain className="w-4 h-4 text-primary" />
-                        <span className="text-xs md:text-sm font-medium">
-                          {dict("mountLabel")}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-1.5 w-full bg-white/10 rounded-full" />
-                      <div className="absolute h-1.5 bg-primary/40 rounded-full" style={{ width: `${mountVal}%` }} />
-                      <input
-                        id="slider-mountains-priority"
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={mountVal}
-                        onChange={(e) => setMountVal(Number(e.target.value))}
-                        className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
-                      />
-                    </div>
-                  </div>
-
                   {/* PHOTO SLIDER */}
-                  <div className="p-2 bg-white/[0.01] border border-white/5 rounded-xl group hover:bg-white/[0.02] transition-colors">
+                  <div className="p-2 bg-black/[0.015] border border-black/5 rounded-xl group hover:bg-black/[0.03] transition-colors">
                     <div className="flex items-center justify-between mb-0.5">
-                      <div className="flex items-center gap-1.5 text-foreground/80 group-hover:text-foreground transition-colors">
+                      <div className="flex items-center gap-1.5 text-foreground group-hover:text-foreground transition-colors">
                         <Camera className="w-4 h-4 text-primary" />
-                        <span className="text-xs md:text-sm font-medium">
-                          {dict("photoLabel")}
-                        </span>
+                        {renderLabel("photoLabel")}
                       </div>
                     </div>
                     <div className="relative flex items-center py-0.5">
-                      <div className="absolute h-1.5 w-full bg-white/10 rounded-full" />
-                      <div className="absolute h-1.5 bg-primary/40 rounded-full" style={{ width: `${photoVal}%` }} />
+                      <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
+                      <div className="absolute h-1.5 bg-primary rounded-full" style={{ width: `${photoVal}%` }} />
                       <input
                         id="slider-photo-priority"
                         type="range"
                         min="0"
                         max="100"
+                        step="25"
                         value={photoVal}
                         onChange={(e) => setPhotoVal(Number(e.target.value))}
                         className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
@@ -529,7 +516,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                 <span className="text-[10px] md:text-xs font-semibold text-muted tracking-wider">
                   {dict("matchingBikes")}
                 </span>
-                <span className="text-xs text-muted/60 font-medium">
+                <span className="text-xs text-muted font-medium">
                   {matchedBikesWithScores.length} {language === 'ru' ? 'найдено' : 'found'}
                 </span>
               </div>
@@ -552,11 +539,11 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                             setSelectedBike(bike);
                             onClose();
                           }}
-                          className="group flex items-center justify-between p-2 md:p-2.5 bg-white/[0.02] hover:bg-primary/5 border border-white/5 hover:border-primary/30 rounded-xl cursor-pointer transition-all duration-300"
+                          className="group flex items-center justify-between p-2 md:p-2.5 bg-black/[0.01] hover:bg-primary/5 border border-black/5 hover:border-primary/20 rounded-xl cursor-pointer transition-all duration-300"
                         >
                           <div className="flex items-center gap-3">
                             {/* Spec miniature image */}
-                            <div className="w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden bg-white/5 shrink-0 border border-white/5">
+                            <div className="w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden bg-black/5 shrink-0 border border-black/5">
                               <img 
                                 src={(bike.images && bike.images.length > 0) ? bike.images[0] : bike.image} 
                                 onError={(e) => {
@@ -573,7 +560,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                                 {bike.name}
                               </h4>
                               <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] md:text-xs font-semibold text-emerald-500 font-mono whitespace-nowrap">
+                                <span className="text-[10px] md:text-xs font-semibold text-emerald-600 font-mono whitespace-nowrap">
                                   {percent}% {dict("matchRate")}
                                 </span>
                               </div>
@@ -586,7 +573,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                                 {formatPrice(dailyRateFrom30)} Rp
                               </span>
                             </div>
-                            <div className="w-7 h-7 bg-white/5 group-hover:bg-primary group-hover:text-white border border-white/5 group-hover:border-primary/30 flex items-center justify-center text-muted transition-all rounded-lg">
+                            <div className="w-7 h-7 bg-black/5 group-hover:bg-primary group-hover:text-white border border-black/5 group-hover:border-primary/20 flex items-center justify-center text-muted group-hover:text-white transition-all rounded-lg">
                               <ArrowRight className="w-4 h-4" />
                             </div>
                           </div>
@@ -610,11 +597,11 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
           </div>
 
           {/* Footer Action */}
-          <div className="p-3.5 md:p-5 pt-0 border-t border-white/5 bg-white/[0.01] shrink-0">
+          <div className="p-3.5 md:p-5 pt-0 border-t border-black/5 bg-black/[0.015] shrink-0">
             <button
               id="smart-filter-bottom-close"
               onClick={onClose}
-              className="w-full h-9 md:h-10 bg-white text-black active:scale-98 hover:opacity-90 rounded-xl font-display font-semibold text-xs md:text-sm transition-all shadow-md"
+              className="w-full h-9 md:h-10 bg-[#111827] text-white hover:bg-[#1f2937] active:scale-98 rounded-xl font-display font-semibold text-xs md:text-sm transition-all shadow-md"
             >
               {dict("close")}
             </button>

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Info, Zap, ShieldCheck, Briefcase, MapPin, Compass, Mountain, Camera, Smartphone, Usb, Heart } from 'lucide-react';
+import { X, Info, Zap, ShieldCheck, Briefcase, MapPin, Compass, Camera, Smartphone, Usb, Heart } from 'lucide-react';
 import { Bike } from '../types';
 import { cn } from '../lib/utils';
 import { 
@@ -22,7 +22,6 @@ interface BikeInfoModalProps {
 const BEST_FOR_CATEGORIES = [
   { id: 'City', label: 'City', icon: MapPin },
   { id: 'Long Trip', label: 'Long Trip', icon: Compass },
-  { id: 'Mountains', label: 'Mountains', icon: Mountain },
   { id: 'Photo', label: 'Photo', icon: Camera },
   { id: 'Couple', label: 'Best for Couple', icon: Heart },
 ];
@@ -43,11 +42,25 @@ export const BikeInfoModal: React.FC<BikeInfoModalProps> = ({ bike, isOpen, onCl
   if (!isOpen) return null;
 
   // Prepare data for the Best For assessment
-  const assessmentData = BEST_FOR_CATEGORIES.map(cat => ({
-    ...cat,
-    percentage: bike.bestFor?.includes(cat.id) ? 100 : 50,
-    isActive: bike.bestFor?.includes(cat.id)
-  }));
+  const assessmentData = BEST_FOR_CATEGORIES.map(cat => {
+    let percentage = 50;
+    let isActive = false;
+    
+    if (bike.bestForPercentages && bike.bestForPercentages[cat.id] !== undefined) {
+      percentage = bike.bestForPercentages[cat.id];
+      isActive = percentage > 0;
+    } else {
+      isActive = bike.bestFor?.includes(cat.id) || false;
+      // Fallback: legacy bikes
+      percentage = isActive ? 100 : (cat.id === 'Couple' ? 50 : 0);
+    }
+    
+    return {
+      ...cat,
+      percentage,
+      isActive
+    };
+  });
 
   return (
     <AnimatePresence>
@@ -179,6 +192,16 @@ export const BikeInfoModal: React.FC<BikeInfoModalProps> = ({ bike, isOpen, onCl
                           {item.label}
                         </span>
                       </div>
+                      {item.isActive && item.id !== 'Couple' && (
+                        <span className="text-[9px] md:text-[10px] font-bold text-primary font-sans">
+                          {item.percentage}%
+                        </span>
+                      )}
+                      {item.id === 'Couple' && (
+                        <span className="text-[9px] md:text-[10px] font-bold text-primary font-sans uppercase tracking-wider">
+                          {item.percentage === 100 ? 'couple' : 'solo traveler'}
+                        </span>
+                      )}
                     </div>
                     {/* Gradient Bar Container */}
                     <div className="relative h-1.5 md:h-2 w-full bg-white/5 rounded-full flex items-center pr-1">

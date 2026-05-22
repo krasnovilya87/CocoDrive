@@ -330,8 +330,32 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
     isPromoActive: false,
     description: '',
     features: [] as string[],
-    bestFor: [] as string[]
+    bestFor: [] as string[],
+    bestForPercentages: {} as Record<string, number>
   });
+
+  const handlePriorityChange = (key: string, val: number) => {
+    const currentBestFor = formData.bestFor || [];
+    let updatedBestFor = [...currentBestFor];
+    if (val > 0) {
+      if (!updatedBestFor.includes(key)) {
+        updatedBestFor.push(key);
+      }
+    } else {
+      updatedBestFor = updatedBestFor.filter(o => o !== key);
+    }
+
+    const updatedPercentages = {
+      ...(formData.bestForPercentages || {}),
+      [key]: val
+    };
+
+    setFormData({
+      ...formData,
+      bestFor: updatedBestFor,
+      bestForPercentages: updatedPercentages
+    });
+  };
 
   useEffect(() => {
     let unsubscribeBikes: (() => void) | undefined;
@@ -979,7 +1003,8 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
       hasUSB: bike.hasUSB || false,
       description: bike.description || '',
       features: bike.features || [],
-      bestFor: bike.bestFor || []
+      bestFor: bike.bestFor || [],
+      bestForPercentages: bike.bestForPercentages || {}
     });
     
     // Set previews for existing images
@@ -1186,7 +1211,8 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
         hasBigTrunk: false,
         description: '',
         features: [],
-        bestFor: []
+        bestFor: [],
+        bestForPercentages: {}
       });
       setEditingBikeId(null);
       setColorDrafts([]);
@@ -1467,7 +1493,8 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                             isPromoActive: false,
                             description: '',
                             features: [],
-                            bestFor: []
+                            bestFor: [],
+                            bestForPercentages: {}
                           });
                           setColorDrafts([]);
                           setGeneralFiles([]);
@@ -1877,33 +1904,173 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                             />
                           </div>
 
-                          <div className="space-y-4">
+                          {/* FOR WHOM (ДЛЯ КОГО) SLIDER */}
+                          <div className="space-y-3">
                             <label className="text-xs font-bold text-muted uppercase tracking-[0.2em] px-1">
-                              Best For
+                              For Whom (Для кого)
                             </label>
-                            <div className="flex flex-wrap gap-2">
-                              {['City', 'Long Trip', 'Mountains', 'Photo', 'Couple'].map(option => (
-                                <button
-                                  key={option}
-                                  type="button"
-                                  onClick={() => {
+                            <div className="space-y-1.5 p-3.5 bg-black/[0.015] border border-black/5 rounded-xl">
+                              <div className="relative pt-1 pb-2">
+                                {/* Slider bar background track */}
+                                <div className="absolute h-1.5 w-full bg-black/10 rounded-full top-1/2 -translate-y-1/2" />
+                                
+                                {/* Slider filled track */}
+                                <div 
+                                  className="absolute h-1.5 bg-primary rounded-full top-1/2 -translate-y-1/2"
+                                  style={{ width: `${((formData.bestFor || []).includes('Couple') ? 2 : 1) / 2 * 100}%` }}
+                                />
+                                
+                                {/* Real slider control */}
+                                <input
+                                  type="range"
+                                  min="1"
+                                  max="2"
+                                  step="1"
+                                  value={(formData.bestFor || []).includes('Couple') ? 2 : 1}
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value);
                                     const current = formData.bestFor || [];
-                                    if (current.includes(option)) {
-                                      setFormData({ ...formData, bestFor: current.filter(o => o !== option) });
+                                    if (val === 2) {
+                                      if (!current.includes('Couple')) {
+                                        setFormData({ ...formData, bestFor: [...current, 'Couple'] });
+                                      }
                                     } else {
-                                      setFormData({ ...formData, bestFor: [...current, option] });
+                                      setFormData({ ...formData, bestFor: current.filter(o => o !== 'Couple') });
                                     }
                                   }}
-                                  className={cn(
-                                    "px-4 py-2 rounded-xl text-xs font-bold border transition-all",
-                                    (formData.bestFor || []).includes(option)
-                                      ? "bg-primary border-primary text-white shadow-lg shadow-primary/20"
-                                      : "bg-surface border-border text-muted hover:border-muted/50"
-                                  )}
-                                >
-                                  {option === 'Couple' ? 'Best for Couple' : option}
-                                </button>
-                              ))}
+                                  className="relative w-full h-5 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
+                                  style={{
+                                    WebkitAppearance: 'none'
+                                  }}
+                                />
+                                
+                                {/* Slider visual ticks */}
+                                <div className="relative h-6 mt-1.5 text-muted">
+                                  <span 
+                                    onClick={() => {
+                                      const current = formData.bestFor || [];
+                                      setFormData({ ...formData, bestFor: current.filter(o => o !== 'Couple') });
+                                    }}
+                                    style={{ left: '50%', transform: 'translateX(-50%)' }}
+                                    className={cn(
+                                      "absolute transition-all duration-200 cursor-pointer font-bold whitespace-nowrap", 
+                                      !(formData.bestFor || []).includes('Couple') ? "text-primary text-xs md:text-sm scale-105" : "text-muted text-xs"
+                                    )}
+                                  >
+                                    solo traveler
+                                  </span>
+                                  <span 
+                                    onClick={() => {
+                                      const current = formData.bestFor || [];
+                                      if (!current.includes('Couple')) {
+                                        setFormData({ ...formData, bestFor: [...current, 'Couple'] });
+                                      }
+                                    }}
+                                    className={cn(
+                                      "absolute right-1 transition-all duration-200 cursor-pointer font-bold whitespace-nowrap", 
+                                      (formData.bestFor || []).includes('Couple') ? "text-primary text-xs md:text-sm scale-105" : "text-muted text-xs"
+                                    )}
+                                  >
+                                    couple
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* FOR WHAT (ДЛЯ ЧЕГО) SLIDERS */}
+                          <div className="space-y-3">
+                            <label className="text-xs font-bold text-muted uppercase tracking-[0.2em] px-1">
+                              For What (Для чего)
+                            </label>
+                            
+                            <div className="space-y-2">
+                              {/* CITY / BEACH SLIDER */}
+                              <div className="p-3 bg-black/[0.015] border border-black/5 rounded-xl">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-bold text-foreground">
+                                    City & beaches
+                                  </span>
+                                  <span className="text-xs font-semibold text-primary">
+                                    {formData.bestForPercentages?.['City'] ?? ((formData.bestFor || []).includes('City') ? 100 : 0)}%
+                                  </span>
+                                </div>
+                                <div className="relative flex items-center py-1">
+                                  <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
+                                  <div 
+                                    className="absolute h-1.5 bg-primary rounded-full" 
+                                    style={{ width: `${formData.bestForPercentages?.['City'] ?? ((formData.bestFor || []).includes('City') ? 100 : 0)}%` }} 
+                                  />
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="25"
+                                    value={formData.bestForPercentages?.['City'] ?? ((formData.bestFor || []).includes('City') ? 100 : 0)}
+                                    onChange={(e) => handlePriorityChange('City', Number(e.target.value))}
+                                    className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
+                                    style={{ WebkitAppearance: 'none' }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* LONG TRIP SLIDER */}
+                              <div className="p-3 bg-black/[0.015] border border-black/5 rounded-xl">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-bold text-foreground">
+                                    Long trips
+                                  </span>
+                                  <span className="text-xs font-semibold text-primary">
+                                    {formData.bestForPercentages?.['Long Trip'] ?? ((formData.bestFor || []).includes('Long Trip') ? 100 : 0)}%
+                                  </span>
+                                </div>
+                                <div className="relative flex items-center py-1">
+                                  <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
+                                  <div 
+                                    className="absolute h-1.5 bg-primary rounded-full" 
+                                    style={{ width: `${formData.bestForPercentages?.['Long Trip'] ?? ((formData.bestFor || []).includes('Long Trip') ? 100 : 0)}%` }} 
+                                  />
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="25"
+                                    value={formData.bestForPercentages?.['Long Trip'] ?? ((formData.bestFor || []).includes('Long Trip') ? 100 : 0)}
+                                    onChange={(e) => handlePriorityChange('Long Trip', Number(e.target.value))}
+                                    className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
+                                    style={{ WebkitAppearance: 'none' }}
+                                  />
+                                </div>
+                              </div>
+
+                              {/* PHOTO SLIDER */}
+                              <div className="p-3 bg-black/[0.015] border border-black/5 rounded-xl">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs font-bold text-foreground">
+                                    Aesthetics & photo
+                                  </span>
+                                  <span className="text-xs font-semibold text-primary">
+                                    {formData.bestForPercentages?.['Photo'] ?? ((formData.bestFor || []).includes('Photo') ? 100 : 0)}%
+                                  </span>
+                                </div>
+                                <div className="relative flex items-center py-1">
+                                  <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
+                                  <div 
+                                    className="absolute h-1.5 bg-primary rounded-full" 
+                                    style={{ width: `${formData.bestForPercentages?.['Photo'] ?? ((formData.bestFor || []).includes('Photo') ? 100 : 0)}%` }} 
+                                  />
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    step="25"
+                                    value={formData.bestForPercentages?.['Photo'] ?? ((formData.bestFor || []).includes('Photo') ? 100 : 0)}
+                                    onChange={(e) => handlePriorityChange('Photo', Number(e.target.value))}
+                                    className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
+                                    style={{ WebkitAppearance: 'none' }}
+                                  />
+                                </div>
+                              </div>
                             </div>
                           </div>
 
