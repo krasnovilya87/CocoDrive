@@ -12,6 +12,17 @@ export const seedBikes = async () => {
     
     console.log('Starting sync of bikes from constants.ts...');
     
+    // Fetch currently existing bikes in DB to clear removed ones
+    const snapshot = await getDocs(bikesRef);
+    const constantBikeIds = new Set(BIKES.map(b => b.id));
+    
+    snapshot.docs.forEach(docSnap => {
+      if (!constantBikeIds.has(docSnap.id)) {
+        console.log(`Deleting obsolete bike from Firestore: ${docSnap.id}`);
+        batch.delete(docSnap.ref);
+      }
+    });
+    
     // Add or update bikes from BIKES constant
     BIKES.forEach((bike, index) => {
       const bikeRef = doc(db, 'bikes', bike.id);

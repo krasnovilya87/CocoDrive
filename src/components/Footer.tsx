@@ -2,8 +2,39 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../LanguageContext';
 
+const footerDict: Record<string, Record<string, string>> = {
+  "FAQ": {
+    en: "FAQ",
+    ru: "Вопросы",
+    id: "FAQ",
+    fr: "FAQ",
+    de: "FAQ"
+  },
+  "Privacy Policy": {
+    en: "Privacy Policy",
+    ru: "Конфиденциальность",
+    id: "Kebijakan Privasi",
+    fr: "Confidentialité",
+    de: "Datenschutz"
+  },
+  "Terms of Service": {
+    en: "Terms of Service",
+    ru: "Условия услуг",
+    id: "Ketentuan Layanan",
+    fr: "Conditions d'utilisation",
+    de: "Nutzungsbedingungen"
+  },
+  "Data Deletion": {
+    en: "Data Deletion",
+    ru: "Удаление данных",
+    id: "Penghapusan Data",
+    fr: "Suppression des données",
+    de: "Datenlöschung"
+  }
+};
+
 export const Footer = ({ onAdminClick }: { onAdminClick?: () => void }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [clickTimes, setClickTimes] = useState<number[]>([]);
 
   const handleAdminClick = () => {
@@ -28,35 +59,35 @@ export const Footer = ({ onAdminClick }: { onAdminClick?: () => void }) => {
             to="/faq"
             className="text-[8px] text-muted uppercase tracking-[0.2em] opacity-50 hover:opacity-100 transition-opacity underline decoration-dotted underline-offset-4"
           >
-            FAQ
+            {footerDict["FAQ"][language] || "FAQ"}
           </Link>
           <span className="text-[8px] text-muted/30">•</span>
           <a 
             href="/privacy.html"
             className="text-[8px] text-muted uppercase tracking-[0.2em] opacity-50 hover:opacity-100 transition-opacity underline decoration-dotted underline-offset-4"
           >
-            Privacy Policy
+            {footerDict["Privacy Policy"][language] || "Privacy Policy"}
           </a>
           <span className="text-[8px] text-muted/30">•</span>
           <a 
             href="/terms.html"
             className="text-[8px] text-muted uppercase tracking-[0.2em] opacity-50 hover:opacity-100 transition-opacity underline decoration-dotted underline-offset-4"
           >
-            Terms of Service
+            {footerDict["Terms of Service"][language] || "Terms of Service"}
           </a>
           <span className="text-[8px] text-muted/30">•</span>
           <a 
             href="/data-deletion.html"
             className="text-[8px] text-muted uppercase tracking-[0.2em] opacity-50 hover:opacity-100 transition-opacity underline decoration-dotted underline-offset-4"
           >
-            Data Deletion
+            {footerDict["Data Deletion"][language] || "Data Deletion"}
           </a>
         </div>
 
         <div className="flex flex-col items-center gap-2">
           <button 
             onClick={handleAdminClick}
-            className="text-[8px] text-muted uppercase tracking-[0.2em] opacity-50 hover:opacity-100 transition-opacity select-none cursor-pointer"
+            className="text-[8px] text-muted uppercase tracking-[0.2em] opacity-50 select-none cursor-default"
           >
             {t.footer.desc}
           </button>

@@ -1,5 +1,5 @@
 {
-  "name": "CocoDrive",
+  "name": "CocoDrive Bali",
   "description": "CocoDrive - Professional bike rental in Bali. Best prices and 24/7 delivery.",
   "requestFramePermissions": ["geolocation"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

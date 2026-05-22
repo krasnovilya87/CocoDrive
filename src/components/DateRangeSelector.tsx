@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
 import { DayPicker, DateRange } from 'react-day-picker';
 import { format } from 'date-fns';
-import { ru, enUS } from 'date-fns/locale';
+import { ru, enUS, id, fr, de } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from '../LanguageContext';
 import { useRental } from '../RentalContext';
@@ -14,7 +14,14 @@ export const DateRangeSelector = () => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const dateLocale = enUS;
+  const localeMap: Record<string, any> = {
+    ru,
+    en: enUS,
+    id,
+    fr,
+    de
+  };
+  const dateLocale = localeMap[language] || enUS;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

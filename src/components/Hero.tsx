@@ -1,95 +1,115 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { MapPin, Shield, Zap } from 'lucide-react';
+import { MapPin, Shield, Zap, ChevronDown } from 'lucide-react';
 import { useLanguage } from '../LanguageContext';
+import heroBg from '../assets/images/hero_background_1779454610068.png';
 
 export const Hero = () => {
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+
+  const text = {
+    en: {
+      brandTag: "Bali Ride Adventure",
+      slogan: "Explore Bali with your own vibe",
+      subtext: "Easy booking. The best price. Free delivery",
+      button: "Choose your vibe"
+    },
+    ru: {
+      brandTag: "Приключения на Бали",
+      slogan: "Исследуй Бали на своей волне",
+      subtext: "Простое бронирование. Лучшая цена. Бесплатная доставка",
+      button: "Выбрать свой вайб"
+    },
+    id: {
+      brandTag: "Petualangan Berkendara Bali",
+      slogan: "Jelajahi Bali dengan vibe Anda sendiri",
+      subtext: "Pemesanan mudah. Harga terbaik. Pengantaran gratis",
+      button: "Pilih vibe Anda"
+    },
+    fr: {
+      brandTag: "Aventure à Moto à Bali",
+      slogan: "Explorez Bali avec votre propre style",
+      subtext: "Réservation facile. Meilleur prix. Livraison gratuite",
+      button: "Choisissez votre style"
+    },
+    de: {
+      brandTag: "Bali Motorrad Abenteuer",
+      slogan: "Erkunde Bali mit deinem eigenen Vibe",
+      subtext: "Einfache Buchung. Bester Preis. Kostenlose Lieferung",
+      button: "Wähle deinen Vibe"
+    }
+  };
+
+  // Safe fallback to 'en'
+  const current = text[language as keyof typeof text] || text.en;
+
+  const handleScrollToCatalog = () => {
+    const element = document.getElementById('catalog');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative h-[85vh] sm:h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
         <img
-          src="https://images.unsplash.com/photo-1558981285-6f0c94958bb6?q=80&w=1920&auto=format&fit=crop"
-          alt="Bali Beach"
-          className="w-full h-full object-cover"
+          src={heroBg}
+          alt="Explore Bali on a scooter"
+          className="w-full h-full object-cover scale-105 animate-subtle-zoom"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/45 to-black/90" />
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
+      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center mt-[-40px] sm:mt-0">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col items-center"
         >
-          <h1 className="text-3xl sm:text-6xl md:text-8xl font-display font-bold leading-[1.1] mb-6 uppercase tracking-tighter">
-            {t.hero.title1} <br />
-            <span className="text-primary">{t.hero.title2}</span>
+          {/* Accent decoration */}
+          <div className="mb-4 px-3 py-1 bg-primary/20 backdrop-blur-md rounded-full border border-primary/30">
+            <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-primary">
+              {current.brandTag}
+            </span>
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-manrope font-black leading-[1.1] mb-6 uppercase tracking-tight text-white drop-shadow-sm max-w-4xl">
+            {current.slogan}
           </h1>
-          <p className="text-lg md:text-xl text-muted max-w-2xl mb-10 leading-relaxed font-light">
-            {t.hero.description}
+          
+          <p className="text-base sm:text-xl text-white/90 max-w-2xl mb-12 font-medium tracking-wide leading-relaxed bg-black/10 backdrop-blur-[2px] py-2 px-4 rounded-xl inline-block">
+            {current.subtext}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <button className="bg-primary text-white px-10 py-5 rounded-2xl font-bold uppercase tracking-widest hover:bg-orange-600 transition-all shadow-[0_0_20px_rgba(242,125,38,0.3)] transform hover:-translate-y-1">
-              {t.hero.btnCatalog}
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-center justify-center">
+            <button 
+              onClick={handleScrollToCatalog}
+              className="bg-primary text-white text-sm sm:text-base px-10 py-5 rounded-2xl font-black uppercase tracking-widest hover:bg-orange-600 hover:shadow-xl hover:shadow-primary/30 transition-all border-none transform hover:-translate-y-1 cursor-pointer active:scale-95"
+            >
+              {current.button}
             </button>
-            <button className="bg-white/10 backdrop-blur-sm text-white border border-white/20 px-10 py-5 rounded-2xl font-bold uppercase tracking-widest hover:bg-white/20 transition-all transform hover:-translate-y-1">
-              {t.hero.btnTerms}
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Stats / Features */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-24 max-w-4xl mx-auto"
-        >
-          <div className="flex items-center gap-4 text-left p-4 rounded-2xl bg-white/5 border border-white/10">
-            <div className="bg-primary/20 p-3 rounded-xl">
-              <MapPin className="text-primary w-6 h-6" />
-            </div>
-            <div>
-              <p className="font-bold text-sm tracking-tight">{t.hero.freeDelivery}</p>
-              <p className="text-[10px] text-muted uppercase tracking-wider">{t.hero.deliverySub}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 text-left p-4 rounded-2xl bg-white/5 border border-white/10">
-            <div className="bg-primary/20 p-3 rounded-xl">
-              <Shield className="text-primary w-6 h-6" />
-            </div>
-            <div>
-              <p className="font-bold text-sm tracking-tight">{t.hero.insurance}</p>
-              <p className="text-[10px] text-muted uppercase tracking-wider">{t.hero.insuranceSub}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 text-left p-4 rounded-2xl bg-white/5 border border-white/10">
-            <div className="bg-primary/20 p-3 rounded-xl">
-              <Zap className="text-primary w-6 h-6" />
-            </div>
-            <div>
-              <p className="font-bold text-sm tracking-tight">{t.hero.support}</p>
-              <p className="text-[10px] text-muted uppercase tracking-wider">{t.hero.supportSub}</p>
-            </div>
           </div>
         </motion.div>
       </div>
 
-      {/* Decorative arrow */}
-      <motion.div
-        animate={{ y: [0, 10, 0] }}
-        transition={{ repeat: Infinity, duration: 2 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 opacity-30"
+      {/* Decorative arrow pointing to catalog */}
+      <motion.button
+        onClick={handleScrollToCatalog}
+        animate={{ y: [0, 8, 0] }}
+        transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-60 hover:opacity-100 transition-opacity flex flex-col items-center gap-1 cursor-pointer"
       >
-        <div className="w-px h-12 bg-white" />
-      </motion.div>
+        <span className="text-[10px] font-bold text-white/60 tracking-widest uppercase">
+          {language === 'ru' ? 'Каталог' : language === 'fr' ? 'Catalogue' : 'Catalog'}
+        </span>
+        <ChevronDown className="w-5 h-5 text-white" />
+      </motion.button>
     </section>
   );
 };
+
 

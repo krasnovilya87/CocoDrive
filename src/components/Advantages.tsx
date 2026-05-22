@@ -46,20 +46,28 @@ export const Advantages = () => {
       { icon: Tag, text: 'Fairer Preis' },
       { icon: Wrench, text: 'Gut gewartet' },
     ],
+    fr: [
+      { icon: ShieldCheck, text: 'Moins de 3 ans' },
+      { icon: Headset, text: 'Support technique' },
+      { icon: Truck, text: 'Livraison gratuite' },
+      { icon: MousePointerClick, text: 'Réservation simple' },
+      { icon: Tag, text: 'Prix équitable' },
+      { icon: Wrench, text: 'Bien entretenu' },
+    ],
   };
 
   const activeItems = content[language as keyof typeof content] || content.en;
 
   return (
-    <section className="py-6 bg-surface/50 border-y border-border/50">
+    <section className="py-8 bg-surface/50 border-y border-border/50">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-4 md:gap-8">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-x-4 gap-y-6 md:gap-8">
           {activeItems.map((item, index) => (
             <div key={index} className="flex flex-col items-center text-center">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
-                <item.icon className="w-4 h-4 md:w-5 md:h-5 text-primary" />
+              <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3 transition-transform hover:scale-105">
+                <item.icon className="w-6 h-6 md:w-7 md:h-7 text-primary" />
               </div>
-              <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-tight text-foreground/70 leading-tight max-w-[80px]">
+              <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-wide text-foreground/85 leading-tight max-w-[90px]">
                 {item.text}
               </span>
             </div>

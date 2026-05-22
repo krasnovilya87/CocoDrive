@@ -1882,7 +1882,7 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                               Best For
                             </label>
                             <div className="flex flex-wrap gap-2">
-                              {['City', 'Long Trip', 'Mountains', 'Photo'].map(option => (
+                              {['City', 'Long Trip', 'Mountains', 'Photo', 'Couple'].map(option => (
                                 <button
                                   key={option}
                                   type="button"
@@ -1901,7 +1901,7 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                                       : "bg-surface border-border text-muted hover:border-muted/50"
                                   )}
                                 >
-                                  {option}
+                                  {option === 'Couple' ? 'Best for Couple' : option}
                                 </button>
                               ))}
                             </div>

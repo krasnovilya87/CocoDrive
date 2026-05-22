@@ -6,6 +6,7 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { Hero } from './components/Hero';
 import { Catalog } from './components/Catalog';
 import { Footer } from './components/Footer';
 import { QuickContact } from './components/QuickContact';
@@ -21,6 +22,7 @@ import { PrivacyPolicy } from './components/PrivacyPolicy';
 import { TermsOfService } from './components/TermsOfService';
 import { FAQ } from './components/FAQ';
 import { getLatestExchangeRates, updateExchangeRates } from './services/dataService';
+import { seedBikes } from './services/seedService';
 import { APIProvider } from '@vis.gl/react-google-maps';
 
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
@@ -65,6 +67,21 @@ const AppContent = () => {
     };
     seedRates();
 
+    const autoSeedBikes = async () => {
+      try {
+        const isSynced = localStorage.getItem('bikes_price_synced_may_2026_v3_couple');
+        if (isSynced !== 'true') {
+          console.log('[autoSeed] Change in characteristics detected. Seeding new attributes to Firestore...');
+          await seedBikes();
+          localStorage.setItem('bikes_price_synced_may_2026_v3_couple', 'true');
+          console.log('[autoSeed] New attributes successfully synced to Firestore!');
+        }
+      } catch (err) {
+        console.error('Error auto seeding bikes:', err);
+      }
+    };
+    autoSeedBikes();
+
     async function testConnection() {
       try {
         // Use a dummy doc to test firestore connection
@@ -98,9 +115,10 @@ const AppContent = () => {
           <>
             <Navbar />
             <main>
+              <Hero />
+              <Advantages />
               <Catalog />
             </main>
-            <Advantages />
             <QuickContact />
             <Footer 
               onAdminClick={() => setShowAdmin(true)} 

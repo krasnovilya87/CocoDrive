@@ -8,14 +8,15 @@ export const PeriodSelector = () => {
   const { language } = useLanguage();
 
   const content = {
-    ru: { title: 'RENTAL PERIOD', days: 'days', discount: 'Your discount', select: 'Select number of days' },
+    ru: { title: 'ПЕРИОД АРЕНДЫ', days: 'дней', discount: 'Ваша скидка', select: 'Выберите количество дней' },
     en: { title: 'RENTAL PERIOD', days: 'days', discount: 'Your discount', select: 'Select number of days' },
     id: { title: 'PERIODE SEWA', days: 'hari', discount: 'Diskon Anda', select: 'Pilih jumlah hari' },
     zh: { title: '租借期限', days: '天', discount: '您的折扣', select: '选择天数' },
     de: { title: 'MIETZEITRAUM', days: 'Tage', discount: 'Ihr Rabatt', select: 'Tage auswählen' },
+    fr: { title: 'DURÉE DE LOCATION', days: 'jours', discount: 'Votre réduction', select: 'Sélectionnez la durée' },
   };
 
-  const t = content[language] || content.en;
+  const t = content[language as keyof typeof content] || content.en;
 
   const quickSelect = [1, 3, 7, 14, 30, 60];
 
@@ -79,20 +80,24 @@ export const PeriodSelector = () => {
             ) : (
               <div className="h-[90px] flex items-center">
                 <p className="text-[10px] text-muted uppercase tracking-widest text-center px-4">
-                  Discounts start from 7 days
+                  {language === 'ru' ? 'Скидки начинаются от 7 дней' : 
+                   language === 'id' ? 'Diskon mulai dari 7 hari' : 
+                   language === 'de' ? 'Rabatte ab 7 Tagen' : 
+                   language === 'fr' ? 'Remises à partir de 7 jours' : 
+                   'Discounts start from 7 days'}
                 </p>
               </div>
             )}
           </div>
-
+ 
           <div className="flex flex-wrap justify-center gap-3">
              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span className="text-[10px] font-bold uppercase text-primary">7+ {t.days}: 20% OFF</span>
+                <span className="text-[10px] font-bold uppercase text-primary">7+ {t.days}: 20% {language === 'ru' ? 'СКИДКА' : language === 'fr' ? 'DE REMISE' : language === 'de' ? 'RABATT' : language === 'id' ? 'DISKON' : 'OFF'}</span>
              </div>
              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span className="text-[10px] font-bold uppercase text-primary">30+ {t.days}: 35% OFF</span>
+                <span className="text-[10px] font-bold uppercase text-primary">30+ {t.days}: 35% {language === 'ru' ? 'СКИДКА' : language === 'fr' ? 'DE REMISE' : language === 'de' ? 'RABATT' : language === 'id' ? 'DISKON' : 'OFF'}</span>
              </div>
           </div>
         </div>

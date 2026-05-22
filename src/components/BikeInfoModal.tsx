@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Info, Zap, ShieldCheck, Briefcase, MapPin, Compass, Mountain, Camera, Smartphone, Usb } from 'lucide-react';
+import { X, Info, Zap, ShieldCheck, Briefcase, MapPin, Compass, Mountain, Camera, Smartphone, Usb, Heart } from 'lucide-react';
 import { Bike } from '../types';
 import { cn } from '../lib/utils';
 import { 
@@ -24,6 +24,7 @@ const BEST_FOR_CATEGORIES = [
   { id: 'Long Trip', label: 'Long Trip', icon: Compass },
   { id: 'Mountains', label: 'Mountains', icon: Mountain },
   { id: 'Photo', label: 'Photo', icon: Camera },
+  { id: 'Couple', label: 'Best for Couple', icon: Heart },
 ];
 
 export const BikeInfoModal: React.FC<BikeInfoModalProps> = ({ bike, isOpen, onClose }) => {
