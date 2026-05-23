@@ -124,6 +124,13 @@ const filterDictObj: Record<string, Record<string, string>> = {
     id: "Mesin",
     fr: "Moteur",
     de: "Motor"
+  },
+  outOfRequirements: {
+    en: "Out of your requirements",
+    ru: "Вне ваших требований",
+    id: "Di luar kriteria Anda",
+    fr: "Hors de vos exigences",
+    de: "Außerhalb Ihrer Anforderungen"
   }
 };
 
@@ -205,62 +212,87 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
 
   // Recommendation engine
   const matchedBikesWithScores = useMemo(() => {
-    if (!bikes || bikes.length === 0) return [];
+    if (!bikes || bikes.length === 0) return { fitting: [], nonFitting: [] };
 
-    return bikes.map(bike => {
+    const BIKE_CHARACTERISTICS: Record<string, { city: number; long: number; photo: number; couple: number }> = {
+      'honda-scoopy': { city: 100, long: 10, photo: 95, couple: 40 },
+      'yamaha-fazzio': { city: 100, long: 0, photo: 75, couple: 40 },
+      'honda-vario-125': { city: 100, long: 20, photo: 40, couple: 50 },
+      'honda-vario-160': { city: 100, long: 45, photo: 50, couple: 65 },
+      'yamaha-nmax': { city: 95, long: 100, photo: 50, couple: 95 },
+      'honda-pcx': { city: 95, long: 100, photo: 60, couple: 95 },
+      'yamaha-aerox': { city: 95, long: 50, photo: 50, couple: 60 },
+      'vespa-sprint': { city: 100, long: 45, photo: 100, couple: 75 },
+      'honda-adv': { city: 90, long: 100, photo: 70, couple: 90 },
+      'yamaha-xmax': { city: 75, long: 100, photo: 60, couple: 100 },
+    };
+
+    const calculated = bikes.map(bike => {
+      const custom = BIKE_CHARACTERISTICS[bike.id];
+
       // --- SCALE 1: CITY & BEACHES ---
       let bCity = 0;
-      if (bike.bestForPercentages && bike.bestForPercentages['City'] !== undefined) {
+      if (custom !== undefined) {
+        bCity = custom.city;
+      } else if (bike.bestForPercentages && bike.bestForPercentages['City'] !== undefined) {
         bCity = bike.bestForPercentages['City'];
       } else {
         bCity = bike.bestFor?.includes('City') ? 100 : (bike.engineSize <= 160 ? 90 : 75);
       }
-      const sCity = cityVal <= 0 ? 1.0 : (bCity >= cityVal ? 1.0 : bCity / cityVal);
+      const sCity = (cityVal === 0 || bCity >= cityVal) ? 100 : (bCity / cityVal) * 100;
 
       // --- SCALE 2: LONG TRIPS ---
       let bLong = 0;
-      if (bike.bestForPercentages && bike.bestForPercentages['Long Trip'] !== undefined) {
+      if (custom !== undefined) {
+        bLong = custom.long;
+      } else if (bike.bestForPercentages && bike.bestForPercentages['Long Trip'] !== undefined) {
         bLong = bike.bestForPercentages['Long Trip'];
       } else {
         bLong = bike.bestFor?.includes('Long Trip') ? 100 : (bike.hasBigTrunk || bike.engineSize >= 250 ? 90 : (bike.engineSize >= 150 ? 80 : (bike.engineSize >= 125 ? 65 : 30)));
       }
-      const sLong = longVal <= 0 ? 1.0 : (bLong >= longVal ? 1.0 : bLong / longVal);
+      const sLong = (longVal === 0 || bLong >= longVal) ? 100 : (bLong / longVal) * 100;
 
       // --- SCALE 3: PHOTO & AESTHETICS ---
       let bPhoto = 0;
-      if (bike.bestForPercentages && bike.bestForPercentages['Photo'] !== undefined) {
+      if (custom !== undefined) {
+        bPhoto = custom.photo;
+      } else if (bike.bestForPercentages && bike.bestForPercentages['Photo'] !== undefined) {
         bPhoto = bike.bestForPercentages['Photo'];
       } else {
         bPhoto = bike.bestFor?.includes('Photo') ? 100 : (bike.name.toLowerCase().includes('vespa') || bike.name.toLowerCase().includes('scoopy') || bike.name.toLowerCase().includes('filano') ? 90 : 40);
       }
-      const sPhoto = photoVal <= 0 ? 1.0 : (bPhoto >= photoVal ? 1.0 : bPhoto / photoVal);
+      const sPhoto = (photoVal === 0 || bPhoto >= photoVal) ? 100 : (bPhoto / photoVal) * 100;
 
       // --- SCALE 4: FOR WHOM / PEOPLE COUNT ---
-      let sPeople = 1.0;
-      if (peopleCount === 2) { // Couple selected
-        let bCouple = 0;
-        if (bike.bestForPercentages && bike.bestForPercentages['Couple'] !== undefined) {
-          bCouple = bike.bestForPercentages['Couple'];
-        } else {
-          bCouple = bike.bestFor?.includes('Couple') ? 100 : (bike.engineSize >= 150 ? 90 : (bike.engineSize >= 125 ? 70 : 40));
-        }
-        sPeople = bCouple >= 100 ? 1.0 : bCouple / 100;
+      let bCouple = 0;
+      if (custom !== undefined) {
+        bCouple = custom.couple;
+      } else if (bike.bestForPercentages && bike.bestForPercentages['Couple'] !== undefined) {
+        bCouple = bike.bestForPercentages['Couple'];
       } else {
-        // Solo traveler, or any traveler count represents a 100% fit for any standard scooter/bike
-        sPeople = 1.0;
+        bCouple = bike.bestFor?.includes('Couple') ? 100 : (bike.engineSize >= 150 ? 90 : (bike.engineSize >= 125 ? 70 : 40));
       }
+      const sPeople = peopleCount === 2 ? (100 <= bCouple ? 100 : bCouple) : 100;
 
       // --- ARITHMETIC MEAN OVER ALL 4 SCALES ---
       const combined = (sCity + sLong + sPhoto + sPeople) / 4;
-      const matchPercent = Math.min(100, Math.max(10, Math.round(combined * 100)));
+      const matchPercent = Math.min(100, Math.max(10, Math.round(combined)));
 
       return {
         bike,
         percent: matchPercent
       };
-    })
-    .filter(item => item.percent >= 10) // broaden filter so all relevant bikes show sorted by score
-    .sort((a, b) => b.percent - a.percent); // sort highest matching first
+    });
+
+    const fitting = calculated
+      .filter(item => item.percent >= 90)
+      .sort((a, b) => b.percent - a.percent);
+
+    const nonFitting = calculated
+      .filter(item => item.percent < 90)
+      .sort((a, b) => b.percent - a.percent);
+
+    return { fitting, nonFitting };
   }, [bikes, peopleCount, cityVal, longVal, photoVal]);
 
   if (!isOpen) return null;
@@ -505,69 +537,137 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                   {dict("matchingBikes")}
                 </span>
                 <span className="text-xs text-muted font-medium">
-                  {matchedBikesWithScores.length} {language === 'ru' ? 'найдено' : 'found'}
+                  {matchedBikesWithScores.fitting.length} {language === 'ru' ? 'найдено' : 'found'}
                 </span>
               </div>
 
               <div className="space-y-1.5 pr-1">
-                <AnimatePresence mode="popLayout">
-                  {matchedBikesWithScores.length > 0 ? (
-                    matchedBikesWithScores.map(({ bike, percent }) => {
-                      const dailyRateFrom30 = bike.priceMonthly || bike.pricePerDay;
-                      
-                      return (
-                        <motion.div
-                          key={`smart-match-${bike.id}`}
-                          initial={{ opacity: 0, y: 15 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          layout
-                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                          onClick={() => {
-                            setSelectedBike(bike);
-                            onClose();
-                          }}
-                          className="group flex items-center justify-between p-2 md:p-2.5 bg-black/[0.01] hover:bg-primary/5 border border-black/5 hover:border-primary/20 rounded-xl cursor-pointer transition-all duration-300"
-                        >
-                          <div className="flex items-center gap-3">
-                            {/* Spec miniature image */}
-                            <div className="w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden bg-black/5 shrink-0 border border-black/5">
-                              <img 
-                                src={(bike.images && bike.images.length > 0) ? bike.images[0] : bike.image} 
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800";
-                                }}
-                                alt={bike.name} 
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                referrerPolicy="no-referrer"
-                              />
-                            </div>
-                            
-                            <div>
-                              <h4 className="text-[13px] md:text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
-                                {bike.name}
-                              </h4>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] md:text-xs font-semibold text-emerald-600 font-mono whitespace-nowrap">
-                                  {percent}% {dict("matchRate")}
-                                </span>
+                {matchedBikesWithScores.fitting.length > 0 || matchedBikesWithScores.nonFitting.length > 0 ? (
+                  <>
+                      {/* Fitting Bikes */}
+                      {matchedBikesWithScores.fitting.map(({ bike, percent }) => {
+                        const dailyRateFrom30 = bike.priceMonthly || bike.pricePerDay;
+                        
+                        return (
+                          <motion.div
+                            key={`smart-match-${bike.id}`}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            layout
+                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            onClick={() => {
+                              setSelectedBike(bike);
+                              onClose();
+                            }}
+                            className="group flex items-center justify-between p-2 md:p-2.5 bg-black/[0.01] hover:bg-primary/5 border border-black/5 hover:border-primary/20 rounded-xl cursor-pointer transition-all duration-300"
+                          >
+                            <div className="flex items-center gap-3">
+                              {/* Spec miniature image */}
+                              <div className="w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden bg-black/5 shrink-0 border border-black/5">
+                                <img 
+                                  src={(bike.images && bike.images.length > 0) ? bike.images[0] : bike.image} 
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800";
+                                  }}
+                                  alt={bike.name} 
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                  referrerPolicy="no-referrer"
+                                />
+                              </div>
+                              
+                              <div>
+                                <h4 className="text-[13px] md:text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">
+                                  {bike.name}
+                                </h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] md:text-xs font-semibold text-emerald-600 font-mono whitespace-nowrap">
+                                    {percent}% {dict("matchRate")}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <span className="text-xs md:text-sm font-semibold text-foreground font-mono leading-none block">
-                                {formatPrice(dailyRateFrom30)} Rp
-                              </span>
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <span className="text-xs md:text-sm font-semibold text-foreground font-mono leading-none block">
+                                  {formatPrice(dailyRateFrom30)} Rp
+                                </span>
+                              </div>
+                              <div className="w-7 h-7 bg-black/5 group-hover:bg-primary group-hover:text-white border border-black/5 group-hover:border-primary/20 flex items-center justify-center text-muted group-hover:text-white transition-all rounded-lg">
+                                <ArrowRight className="w-4 h-4" />
+                              </div>
                             </div>
-                            <div className="w-7 h-7 bg-black/5 group-hover:bg-primary group-hover:text-white border border-black/5 group-hover:border-primary/20 flex items-center justify-center text-muted group-hover:text-white transition-all rounded-lg">
-                              <ArrowRight className="w-4 h-4" />
+                          </motion.div>
+                        );
+                      })}
+
+                      {/* Double Line Divider */}
+                      {matchedBikesWithScores.nonFitting.length > 0 && (
+                        <div className="flex flex-col gap-[3px] py-1.5 px-0.5 select-none opacity-40">
+                          <div className="w-full border-t border-dashed border-black/15 dark:border-white/15" />
+                          <div className="w-full border-t border-dashed border-black/15 dark:border-white/15" />
+                        </div>
+                      )}
+
+                      {/* Non-fitting Bikes */}
+                      {matchedBikesWithScores.nonFitting.map(({ bike, percent }) => {
+                        const dailyRateFrom30 = bike.priceMonthly || bike.pricePerDay;
+                        
+                        return (
+                          <motion.div
+                            key={`smart-match-non-${bike.id}`}
+                            initial={{ opacity: 0, y: 15 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            layout
+                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            onClick={() => {
+                              setSelectedBike(bike);
+                              onClose();
+                            }}
+                            className="group flex items-center justify-between p-2 md:p-2.5 bg-black/[0.005]/5 dark:bg-white/[0.005]/5 hover:bg-primary/5 border border-black/[0.02]/5 hover:border-primary/20 rounded-xl cursor-pointer transition-all duration-300 opacity-60 hover:opacity-100"
+                          >
+                            <div className="flex items-center gap-3">
+                              {/* Spec miniature image with grayscale overlay classes */}
+                              <div className="w-10 h-10 md:w-11 md:h-11 rounded-lg overflow-hidden bg-black/5 shrink-0 border border-black/5 opacity-80 group-hover:opacity-100">
+                                <img 
+                                  src={(bike.images && bike.images.length > 0) ? bike.images[0] : bike.image} 
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&q=80&w=800";
+                                  }}
+                                  alt={bike.name} 
+                                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-transform duration-500"
+                                  referrerPolicy="no-referrer"
+                                />
+                              </div>
+                              
+                              <div>
+                                <h4 className="text-[13px] md:text-sm font-semibold text-muted-foreground group-hover:text-primary transition-colors leading-tight">
+                                  {bike.name}
+                                </h4>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-[10px] md:text-xs font-semibold text-muted-foreground/80 font-mono whitespace-nowrap">
+                                    {percent}% {dict("matchRate")}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </motion.div>
-                      );
-                    })
+
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <span className="text-xs md:text-sm font-semibold text-muted-foreground/80 font-mono leading-none block">
+                                  {formatPrice(dailyRateFrom30)} Rp
+                                </span>
+                              </div>
+                              <div className="w-7 h-7 bg-black/5 group-hover:bg-primary group-hover:text-white border border-black/5 group-hover:border-primary/20 flex items-center justify-center text-muted group-hover:text-white transition-all rounded-lg">
+                                <ArrowRight className="w-4 h-4" />
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </>
                   ) : (
                     <motion.div
                       key="empty-matches"
@@ -578,7 +678,6 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                       {dict("noBikes")}
                     </motion.div>
                   )}
-                </AnimatePresence>
               </div>
             </div>
 
