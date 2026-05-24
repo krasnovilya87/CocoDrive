@@ -109,9 +109,11 @@ export const DateRangeSelector = () => {
                     <span className="text-2xl font-display font-bold text-primary">{days}</span>
                     <span className="text-[10px] text-muted uppercase font-bold tracking-widest">{t.catalog.perDay}</span>
                   </div>
-                  {days >= 1 && (
+                  {days >= 4 && (
                     <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">
-                      {days >= 30 ? '-25%' : days >= 7 ? '-15%' : '-8%'} discount
+                      {days >= 30 
+                        ? (language === 'ru' ? 'Месячный тариф' : language === 'id' ? 'Tarif Bulanan' : language === 'fr' ? 'Tarif Mensuel' : language === 'de' ? 'Monatspreis' : 'Monthly Rate') 
+                        : (language === 'ru' ? 'Недельный тариф' : language === 'id' ? 'Tarif Mingguan' : language === 'fr' ? 'Tarif Hebdomadaire' : language === 'de' ? 'Wochenpreis' : 'Weekly Rate')}
                     </span>
                   )}
                 </div>

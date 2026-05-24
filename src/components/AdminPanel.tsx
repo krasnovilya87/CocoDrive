@@ -227,18 +227,32 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
       if (ownerPayout === undefined || ownerPayout === null) {
         const listing = listings.find(l => l.id === b.assignedListingId);
         const bike = bikes.find(bike => bike.id === (listing?.bikeId || b.bikeId));
-        let ownerDayRate = 0;
         const daysCount = b.days || b.durationDays || 0;
+        const getInterpolatedPayout = (pD: number, pM: number, d: number) => {
+          if (d <= 0) return 0;
+          let rawTotal = 0;
+          if (d <= 7) {
+            rawTotal = d * pD;
+          } else if (d >= 30) {
+            rawTotal = d * pM;
+          } else {
+            const totalAt7 = 7 * pD;
+            const totalAt30 = 30 * pM;
+            rawTotal = totalAt7 + (totalAt30 - totalAt7) * (d - 7) / 23;
+          }
+          return Math.ceil(rawTotal / 10000) * 10000;
+        };
         if (listing) {
-          if (daysCount >= 30) ownerDayRate = listing.priceMonthly || listing.priceWeekly || listing.pricePerDay || 0;
-          else if (daysCount >= 7) ownerDayRate = listing.priceWeekly || listing.pricePerDay || 0;
-          else ownerDayRate = listing.pricePerDay || 0;
+          const pD = listing.pricePerDay || 0;
+          const pM = listing.priceMonthly || listing.priceWeekly || pD;
+          ownerPayout = getInterpolatedPayout(pD, pM, daysCount);
         } else if (bike) {
-          if (daysCount >= 30) ownerDayRate = bike.priceMonthly || bike.priceWeekly || bike.pricePerDay || 0;
-          else if (daysCount >= 7) ownerDayRate = bike.priceWeekly || bike.pricePerDay || 0;
-          else ownerDayRate = bike.pricePerDay || 0;
+          const pD = bike.pricePerDay || 0;
+          const pM = bike.priceMonthly || bike.priceWeekly || pD;
+          ownerPayout = getInterpolatedPayout(pD, pM, daysCount);
+        } else {
+          ownerPayout = 0;
         }
-        ownerPayout = ownerDayRate * daysCount;
       }
 
       const platformFee = b.platformFee !== undefined && b.platformFee !== null ? b.platformFee : (revenue - ownerPayout);
@@ -2868,20 +2882,33 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                                     const listing = listings.find(l => l.id === booking.assignedListingId);
                                     const bike = bikes.find(b => b.id === (listing?.bikeId || booking.bikeId));
                                     
-                                    let ownerDayRate = 0;
                                     const daysCount = booking.days || booking.durationDays || 0;
+                                    const getInterpolatedPayout = (pD: number, pM: number, d: number) => {
+                                      if (d <= 0) return 0;
+                                      let rawTotal = 0;
+                                      if (d <= 7) {
+                                        rawTotal = d * pD;
+                                      } else if (d >= 30) {
+                                        rawTotal = d * pM;
+                                      } else {
+                                        const totalAt7 = 7 * pD;
+                                        const totalAt30 = 30 * pM;
+                                        rawTotal = totalAt7 + (totalAt30 - totalAt7) * (d - 7) / 23;
+                                      }
+                                      return Math.ceil(rawTotal / 10000) * 10000;
+                                    };
                                     
+                                    let ownerTotal = 0;
                                     if (listing) {
-                                      if (daysCount >= 30) ownerDayRate = listing.priceMonthly || listing.priceWeekly || listing.pricePerDay || 0;
-                                      else if (daysCount >= 7) ownerDayRate = listing.priceWeekly || listing.pricePerDay || 0;
-                                      else ownerDayRate = listing.pricePerDay || 0;
+                                      const pD = listing.pricePerDay || 0;
+                                      const pM = listing.priceMonthly || listing.priceWeekly || pD;
+                                      ownerTotal = getInterpolatedPayout(pD, pM, daysCount);
                                     } else if (bike) {
-                                      if (daysCount >= 30) ownerDayRate = bike.priceMonthly || bike.priceWeekly || bike.pricePerDay || 0;
-                                      else if (daysCount >= 7) ownerDayRate = bike.priceWeekly || bike.pricePerDay || 0;
-                                      else ownerDayRate = bike.pricePerDay || 0;
+                                      const pD = bike.pricePerDay || 0;
+                                      const pM = bike.priceMonthly || bike.priceWeekly || pD;
+                                      ownerTotal = getInterpolatedPayout(pD, pM, daysCount);
                                     }
                                     
-                                    const ownerTotal = ownerDayRate * daysCount;
                                     const total = booking.totalPrice || 0;
                                     const profit = total - ownerTotal;
                                     
@@ -3333,20 +3360,33 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                                     const listing = listings.find(l => l.id === selectedBooking.assignedListingId);
                                     const bike = bikes.find(b => b.id === (listing?.bikeId || selectedBooking.bikeId));
                                     
-                                    let ownerDayRate = 0;
                                     const daysCount = selectedBooking.days || selectedBooking.durationDays || 0;
+                                    const getInterpolatedPayout = (pD: number, pM: number, d: number) => {
+                                      if (d <= 0) return 0;
+                                      let rawTotal = 0;
+                                      if (d <= 7) {
+                                        rawTotal = d * pD;
+                                      } else if (d >= 30) {
+                                        rawTotal = d * pM;
+                                      } else {
+                                        const totalAt7 = 7 * pD;
+                                        const totalAt30 = 30 * pM;
+                                        rawTotal = totalAt7 + (totalAt30 - totalAt7) * (d - 7) / 23;
+                                      }
+                                      return Math.ceil(rawTotal / 10000) * 10000;
+                                    };
                                     
+                                    let ownerTotal = 0;
                                     if (listing) {
-                                      if (daysCount >= 30) ownerDayRate = listing.priceMonthly || listing.priceWeekly || listing.pricePerDay || 0;
-                                      else if (daysCount >= 7) ownerDayRate = listing.priceWeekly || listing.pricePerDay || 0;
-                                      else ownerDayRate = listing.pricePerDay || 0;
+                                      const pD = listing.pricePerDay || 0;
+                                      const pM = listing.priceMonthly || listing.priceWeekly || pD;
+                                      ownerTotal = getInterpolatedPayout(pD, pM, daysCount);
                                     } else if (bike) {
-                                      if (daysCount >= 30) ownerDayRate = bike.priceMonthly || bike.priceWeekly || bike.pricePerDay || 0;
-                                      else if (daysCount >= 7) ownerDayRate = bike.priceWeekly || bike.pricePerDay || 0;
-                                      else ownerDayRate = bike.pricePerDay || 0;
+                                      const pD = bike.pricePerDay || 0;
+                                      const pM = bike.priceMonthly || bike.priceWeekly || pD;
+                                      ownerTotal = getInterpolatedPayout(pD, pM, daysCount);
                                     }
                                     
-                                    const ownerTotal = ownerDayRate * daysCount;
                                     const profit = (selectedBooking.totalPrice || 0) - ownerTotal;
                                     
                                     return (
@@ -3696,7 +3736,7 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                         <div className="grid grid-cols-3 gap-3">
                           <div className="space-y-1">
                             <div className="flex flex-col ml-1 min-h-[22px] justify-end">
-                              <label className="text-[9px] font-bold text-muted uppercase tracking-wider ml-1 truncate block">Rate/Day (1-6)</label>
+                              <label className="text-[9px] font-bold text-muted uppercase tracking-wider ml-1 truncate block">Rate/Day (1-7)</label>
                               <span className="text-[8px] font-bold text-primary leading-none">Total: {formatPrice(listingFormData.pricePerDay || 0)}</span>
                             </div>
                             <input 
@@ -3714,7 +3754,7 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                           </div>
                           <div className="space-y-1">
                             <div className="flex flex-col ml-1 min-h-[22px] justify-end">
-                              <label className="text-[9px] font-bold text-muted uppercase tracking-wider truncate">Rate/Day (7+)</label>
+                              <label className="text-[9px] font-bold text-muted uppercase tracking-wider truncate">Rate/Day (8-29)</label>
                               <span className="text-[8px] font-bold text-primary leading-none">Total: {formatPrice((listingFormData.priceWeekly || listingFormData.pricePerDay || 0) * 7)}</span>
                             </div>
                             <input 

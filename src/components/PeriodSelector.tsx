@@ -22,7 +22,7 @@ export const PeriodSelector = () => {
 
   const getDiscount = (d: number) => {
     if (d >= 30) return 35;
-    if (d >= 7) return 20;
+    if (d >= 8) return 20;
     return 0;
   };
 
@@ -80,11 +80,11 @@ export const PeriodSelector = () => {
             ) : (
               <div className="h-[90px] flex items-center">
                 <p className="text-[10px] text-muted uppercase tracking-widest text-center px-4">
-                  {language === 'ru' ? 'Скидки начинаются от 7 дней' : 
-                   language === 'id' ? 'Diskon mulai dari 7 hari' : 
-                   language === 'de' ? 'Rabatte ab 7 Tagen' : 
-                   language === 'fr' ? 'Remises à partir de 7 jours' : 
-                   'Discounts start from 7 days'}
+                  {language === 'ru' ? 'Скидки начинаются от 8 дней' : 
+                   language === 'id' ? 'Diskon mulai dari 8 hari' : 
+                   language === 'de' ? 'Rabatte ab 8 Tagen' : 
+                   language === 'fr' ? 'Remises à partir de 8 jours' : 
+                   'Discounts start from 8 days'}
                 </p>
               </div>
             )}
@@ -93,7 +93,7 @@ export const PeriodSelector = () => {
           <div className="flex flex-wrap justify-center gap-3">
              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                <span className="text-[10px] font-bold uppercase text-primary">7+ {t.days}: 20% {language === 'ru' ? 'СКИДКА' : language === 'fr' ? 'DE REMISE' : language === 'de' ? 'RABATT' : language === 'id' ? 'DISKON' : 'OFF'}</span>
+                <span className="text-[10px] font-bold uppercase text-primary">8+ {t.days}: 20% {language === 'ru' ? 'СКИДКА' : language === 'fr' ? 'DE REMISE' : language === 'de' ? 'RABATT' : language === 'id' ? 'DISKON' : 'OFF'}</span>
              </div>
              <div className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary" />

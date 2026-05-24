@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence, useSpring, useTransform } from "motion/react";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, ReferenceLine } from "recharts";
 import {
   ChevronLeft,
   Calendar,
@@ -801,18 +802,18 @@ const bookingDict: Record<string, Record<string, string>> = {
     de: "Aktionspreis",
   },
   "monthly discount": {
-    en: "monthly discount",
-    ru: "скидка за месяц",
-    id: "diskon bulanan",
-    fr: "remise mensuelle",
-    de: "Monatsrabatt",
+    en: "Weekly Rate",
+    ru: "Недельный тариф",
+    id: "Tarif Mingguan",
+    fr: "Tarif Hebdomadaire",
+    de: "Wochenpreis",
   },
   "weekly discount": {
-    en: "weekly discount",
-    ru: "скидка за неделю",
-    id: "diskon mingguan",
-    fr: "remise hebdomadaire",
-    de: "Wochenrabatt",
+    en: "Daily Rate",
+    ru: "Дневной тариф",
+    id: "Tarif Harian",
+    fr: "Tarif Journalier",
+    de: "Tagespreis",
   },
   "Rates & discounts": {
     en: "Rates & discounts",
@@ -830,7 +831,7 @@ const bookingDict: Record<string, Record<string, string>> = {
   },
   "Daily Rate": {
     en: "Daily Rate",
-    ru: "Посуточно",
+    ru: "Дневной тариф",
     id: "Tarif Harian",
     fr: "Tarif Journalier",
     de: "Tagespreis",
@@ -1255,32 +1256,125 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
     setRange({ from: newRange?.from, to: newRange?.to });
   };
 
-  // Calculate price based on tiered pricing and promo
-  const finalPricePerDay = useMemo(() => {
-    // Promo works only for rentals < 7 days
+  // Calculate price based on tiered pricing and promo with smooth interpolation of total cost
+  const totalPriceBeforePromo = useMemo(() => {
+    if (days <= 0) return 0;
+
+    // Promo works only for rentals <= 7 days
     if (
-      days < 7 &&
+      days <= 7 &&
       bike.isPromoActive &&
       bike.promoPrice &&
       bike.promoPrice > 0
     ) {
-      return bike.promoPrice;
+      const rawTotal = days * bike.promoPrice;
+      const rounded = Math.round(rawTotal / 50000) * 50000;
+      return Math.max(50000, rounded);
     }
 
-    // Tiered pricing for 7+ days
-    if (days >= 30) {
-      return bike.priceMonthly;
-    } else if (days >= 7) {
-      return bike.priceWeekly;
+    const pDaily = bike.pricePerDay;
+    const pMonthly = bike.priceMonthly || pDaily;
+
+    let rawTotal = 0;
+    if (days <= 3) {
+      rawTotal = days * pDaily;
+    } else if (days >= 30) {
+      rawTotal = days * pMonthly;
+    } else {
+      // Days from 4 to 29
+      const totalAt3 = 3 * pDaily;
+      const totalAt30 = 30 * pMonthly;
+      const range = 30 - 3;
+      const factor = (days - 3) / range;
+      rawTotal = totalAt3 + (totalAt30 - totalAt3) * factor;
     }
 
-    return bike.pricePerDay;
+    const rounded = Math.round(rawTotal / 50000) * 50000;
+    return Math.max(50000, rounded);
   }, [bike, days]);
 
-  const totalPriceBeforePromo = finalPricePerDay * days;
-  const totalPrice = appliedPromo
-    ? Math.round(totalPriceBeforePromo * (1 - appliedPromo.discount / 100))
-    : totalPriceBeforePromo;
+  const finalPricePerDay = useMemo(() => {
+    if (days <= 0) return bike.pricePerDay;
+    const rawRate = totalPriceBeforePromo / days;
+    const rounded = Math.round(rawRate / 1000) * 1000;
+    return Math.max(1000, rounded);
+  }, [totalPriceBeforePromo, days, bike.pricePerDay]);
+
+  const weeklyDiscountRange = useMemo(() => {
+    const pDaily = bike.pricePerDay || 0;
+    const pMonthly = bike.priceMonthly || pDaily;
+    if (pDaily <= 0) return { min: 0, max: 0 };
+
+    const totalAt3 = 3 * pDaily;
+    const totalAt30 = 30 * pMonthly;
+
+    // Day 4:
+    const rawTotal4 = totalAt3 + (totalAt30 - totalAt3) * (1 / 27);
+    const rate4 = rawTotal4 / 4;
+    const minWeeklyDiscount = Math.round((1 - rate4 / pDaily) * 100);
+
+    // Day 29:
+    const rawTotal29 = totalAt3 + (totalAt30 - totalAt3) * (26 / 27);
+    const rate29 = rawTotal29 / 29;
+    const maxWeeklyDiscount = Math.round((1 - rate29 / pDaily) * 100);
+
+    return { min: Math.max(0, minWeeklyDiscount), max: Math.max(0, maxWeeklyDiscount) };
+  }, [bike]);
+
+  const chartData = useMemo(() => {
+    const pDaily = bike.pricePerDay || 0;
+    const pMonthly = bike.priceMonthly || pDaily;
+    if (pDaily <= 0) return [];
+
+    const totalAt3 = 3 * pDaily;
+    const totalAt30 = 30 * pMonthly;
+
+    const data = [];
+    for (let d = 1; d <= 34; d++) {
+      let rawTotal = 0;
+      if (d <= 3) {
+        rawTotal = d * pDaily;
+      } else if (d <= 30) {
+        const factor = (d - 3) / 27;
+        rawTotal = totalAt3 + (totalAt30 - totalAt3) * factor;
+      } else {
+        rawTotal = d * pMonthly;
+      }
+
+      // Calculate a perfectly uniform linear decrease for the daily price shown on the chart:
+      let rate = pDaily;
+      if (d <= 30) {
+        if (d > 3) {
+          rate = pDaily - (pDaily - pMonthly) * (d - 3) / 27;
+        }
+      } else {
+        rate = pMonthly;
+      }
+
+      const effectiveRate = Math.max(10000, Math.round(rate / 10000) * 10000);
+      const roundedTotal = Math.max(50000, Math.round(rawTotal / 50000) * 50000);
+      const kPrice = Math.round(effectiveRate / 1000);
+      data.push({
+        day: d,
+        price: kPrice, // in thousands IDR e.g. 150k
+        priceDaily: d <= 3 ? kPrice : null,
+        priceWeekly: (d >= 3 && d <= 30) ? kPrice : null,
+        priceMonthly: d >= 30 ? kPrice : null,
+        fullPrice: effectiveRate,
+        totalPrice: roundedTotal
+      });
+    }
+    return data;
+  }, [bike]);
+
+  const totalPrice = useMemo(() => {
+    let result = totalPriceBeforePromo;
+    if (appliedPromo) {
+      result = Math.round(result * (1 - appliedPromo.discount / 100));
+    }
+    const rounded = Math.round(result / 50000) * 50000;
+    return days > 0 ? Math.max(50000, rounded) : 0;
+  }, [totalPriceBeforePromo, appliedPromo, days]);
 
   const handleApplyPromo = async () => {
     if (!promoInput.trim()) return;
@@ -1474,8 +1568,8 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
     animatedPrice.set(totalPrice);
   }, [totalPrice, animatedPrice]);
 
-  const displayPrice = useTransform(animatedPrice, (latest) =>
-    Math.round(latest),
+  const displayPrice = useTransform(animatedPrice, (latest: any) =>
+    Math.round(Number(latest)),
   );
 
   const PriceRoller = ({ value }: { value: any }) => {
@@ -2174,14 +2268,14 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
                     className="flex items-center gap-1.5 px-2.5 py-1 bg-red-500/5 hover:bg-red-500/10 border border-red-500/15 rounded-full transition-all cursor-pointer shadow-sm active:scale-95"
                   >
                     <span className="text-[9px] font-black text-red-500 uppercase tracking-widest leading-none border-b border-red-500/30 hover:border-red-500 pb-0.5">
-                      {days < 7 &&
+                      {days <= 7 &&
                       bike.isPromoActive &&
                       bike.promoPrice &&
                       bike.promoPrice > 0
                         ? getBookingT("promo price", language)
                         : days >= 30
-                          ? getBookingT("monthly discount", language)
-                          : getBookingT("weekly discount", language)}
+                          ? getBookingT("Monthly Rate", language)
+                          : getBookingT("Weekly Rate", language)}
                     </span>
                     <Info className="w-2.5 h-2.5 text-red-500 inline-block shrink-0" />
                   </button>
@@ -2725,7 +2819,7 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-surface w-full max-w-sm rounded-[32px] overflow-hidden shadow-2xl relative z-10 p-8"
+              className="bg-surface w-full max-w-[440px] rounded-[32px] overflow-hidden shadow-2xl relative z-10 p-8"
             >
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-display font-bold text-foreground">
@@ -2740,113 +2834,177 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
               </div>
 
               <div className="space-y-4">
-                {/* Daily */}
-                <div className="p-4 bg-muted/5 rounded-2xl border border-border/50 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
-                      {getBookingT("Daily Rate", language)}
-                    </span>
-                    <span className="text-sm font-medium text-foreground">
-                      1-6 {getBookingT("days", language)}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-display font-bold text-foreground">
-                      {formatPrice(bike.pricePerDay)}
-                    </div>
-                    <div className="text-[10px] text-muted font-medium">
-                      {getBookingT("per day", language)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Weekly */}
-                <div className="p-4 bg-primary/5 rounded-2xl border border-primary/20 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-primary uppercase tracking-widest">
-                        {getBookingT("Weekly Rate", language)}
+                {/* Visual Chart with segments */}
+                <div className="p-5 bg-muted/5 border border-border/50 rounded-[24px]">
+                  {/* Legend Badges for tiers in a column (столбик) */}
+                  <div className="flex flex-col gap-2.5 mb-5 border-b border-border/40 pb-4 text-[11px] font-semibold leading-relaxed">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: '#94A3B8' }} />
+                      <span className="text-foreground">
+                        {language === 'ru' ? '1-3 дней — Дневной тариф' :
+                         language === 'id' ? '1-3 hari — Tarif Harian' :
+                         language === 'fr' ? '1-3 jours — Tarif Journalier' :
+                         language === 'de' ? '1-3 Tage — Tagespreis' :
+                         '1-3 days — Daily Rate'}
                       </span>
-                      {bike.priceWeekly &&
-                        bike.priceWeekly < bike.pricePerDay && (
-                          <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs font-black rounded-lg">
-                            -
-                            {Math.round(
-                              (1 - bike.priceWeekly / bike.pricePerDay) * 100,
-                            )}
-                            %
-                          </span>
-                        )}
                     </div>
-                    <span className="text-sm font-medium text-foreground">
-                      7-29 {getBookingT("days", language)}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-display font-bold text-primary">
-                      {bike.priceWeekly
-                        ? formatPrice(bike.priceWeekly)
-                        : formatPrice(bike.pricePerDay)}
-                    </div>
-                    <div className="text-[10px] text-primary/60 font-medium">
-                      {getBookingT("per day", language)}
-                    </div>
-                    <div className="text-[10px] font-bold text-primary mt-1.5 flex flex-col items-end">
-                      <span className="opacity-75">
-                        {getBookingT("Total/week:", language)}
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: '#F27D26' }} />
+                      <span className="text-foreground">
+                        {language === 'ru' ? '4-29 дней — Недельный тариф' :
+                         language === 'id' ? '4-29 hari — Tarif Mingguan' :
+                         language === 'fr' ? '4-29 jours — Tarif Hebdomadaire' :
+                         language === 'de' ? '4-29 Tage — Wochenpreis' :
+                         '4-29 days — Weekly Rate'}
                       </span>
-                      <span className="text-xs font-black text-primary mt-0.5">
-                        {formatPrice(
-                          (bike.priceWeekly || bike.pricePerDay) * 7,
-                        )}{" "}
-                        IDR
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: '#10B981' }} />
+                      <span className="text-foreground">
+                        {language === 'ru' ? '30+ дней — Месячный тариф' :
+                         language === 'id' ? '30+ hari — Tarif Bulanan' :
+                         language === 'fr' ? '30+ jours — Tarif Mensuel' :
+                         language === 'de' ? '30+ Tage — Monatspreis' :
+                         '30+ days — Monthly Rate'}
                       </span>
                     </div>
                   </div>
-                </div>
-
-                {/* Monthly */}
-                <div className="p-4 bg-foreground/5 rounded-2xl border border-foreground/10 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-muted uppercase tracking-widest">
-                        {getBookingT("Monthly Rate", language)}
-                      </span>
-                      {bike.priceMonthly &&
-                        bike.priceMonthly < bike.pricePerDay && (
-                          <span className="px-2 py-0.5 bg-foreground/10 text-foreground text-xs font-black rounded-lg">
-                            -
-                            {Math.round(
-                              (1 - bike.priceMonthly / bike.pricePerDay) * 100,
-                            )}
-                            %
-                          </span>
-                        )}
-                    </div>
-                    <span className="text-sm font-medium text-foreground">
-                      30+ {getBookingT("days", language)}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-lg font-display font-bold text-foreground">
-                      {bike.priceMonthly
-                        ? formatPrice(bike.priceMonthly)
-                        : formatPrice(bike.pricePerDay)}
-                    </div>
-                    <div className="text-[10px] text-muted font-medium">
-                      {getBookingT("per day", language)}
-                    </div>
-                    <div className="text-[10px] font-bold text-foreground mt-1.5 flex flex-col items-end">
-                      <span className="opacity-75">
-                        {getBookingT("Total/month:", language)}
-                      </span>
-                      <span className="text-xs font-black text-foreground mt-0.5">
-                        {formatPrice(
-                          (bike.priceMonthly || bike.pricePerDay) * 30,
-                        )}{" "}
-                        IDR
-                      </span>
-                    </div>
+ 
+                  <div className="w-full h-36 mt-1">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 12, right: 10, left: -22, bottom: 0 }}>
+                        <defs>
+                          {/* Daily gradient (Slate/Gray) */}
+                          <linearGradient id="colorDaily" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#94A3B8" stopOpacity={0}/>
+                          </linearGradient>
+                          {/* Weekly gradient (Brand Orange) */}
+                          <linearGradient id="colorWeekly" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#F27D26" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#F27D26" stopOpacity={0}/>
+                          </linearGradient>
+                          {/* Monthly gradient (Emerald Green) */}
+                          <linearGradient id="colorMonthly" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(0,0,0,0.05)" />
+                        <XAxis 
+                          dataKey="day" 
+                          tickLine={false} 
+                          axisLine={false} 
+                          tick={{ fill: '#6B7280', fontSize: 8 }}
+                          ticks={[1, 5, 10, 15, 20, 25, 30]}
+                          tickFormatter={(val) => {
+                            if (val === 30) {
+                              return "30+";
+                            }
+                            return `${val}${language === 'ru' ? 'д' : 'd'}`;
+                          }}
+                        />
+                        <YAxis 
+                          tickLine={false} 
+                          axisLine={false} 
+                          tick={{ fill: '#6B7280', fontSize: 8 }}
+                          unit="k"
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              const displayDay = data.day >= 30 ? "30+" : data.day;
+                              const totalLabel = language === 'ru' ? 'Итого' 
+                                : language === 'id' ? 'Total' 
+                                : language === 'fr' ? 'Total' 
+                                : language === 'de' ? 'Gesamt' 
+                                : 'Total';
+                              const perDayLabel = getBookingT("per day", language);
+                              const totalDaysCount = data.day >= 30 ? 30 : data.day;
+                              return (
+                                <div className="bg-surface/95 border border-border/50 p-2.5 rounded-xl shadow-xl text-[10px] font-medium leading-normal text-foreground space-y-1">
+                                  <p className="font-bold text-muted leading-none mb-1.5">
+                                    {displayDay} {getBookingT("days", language)}
+                                  </p>
+                                  <p className="font-semibold flex justify-between gap-3 text-muted">
+                                    <span>{perDayLabel}:</span>
+                                    <span>{formatPrice(data.fullPrice)} IDR</span>
+                                  </p>
+                                  <p className="font-bold text-primary flex justify-between gap-3 border-t border-border/40 pt-1 mt-1">
+                                    <span>{totalLabel}:</span>
+                                    <span>{formatPrice(data.totalPrice || (data.fullPrice * totalDaysCount))} IDR</span>
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        {/* Text labels directly on the chart segments */}
+                        <ReferenceLine 
+                          x={1.8} 
+                          stroke="none" 
+                          label={{ 
+                            value: language === 'ru' ? 'Дневной' : language === 'id' ? 'Harian' : 'Daily', 
+                            fill: '#94A3B8', 
+                            fontSize: 8, 
+                            fontWeight: 'bold', 
+                            position: 'insideTop' 
+                          }} 
+                        />
+                        <ReferenceLine 
+                          x={16} 
+                          stroke="none" 
+                          label={{ 
+                            value: language === 'ru' ? 'Недельный' : language === 'id' ? 'Mingguan' : 'Weekly', 
+                            fill: '#F27D26', 
+                            fontSize: 8, 
+                            fontWeight: 'bold', 
+                            position: 'insideTop' 
+                          }} 
+                        />
+                        <ReferenceLine 
+                          x={32} 
+                          stroke="none" 
+                          label={{ 
+                            value: language === 'ru' ? 'Месячный' : language === 'id' ? 'Bulanan' : 'Monthly', 
+                            fill: '#10B981', 
+                            fontSize: 8, 
+                            fontWeight: 'bold', 
+                            position: 'insideTop' 
+                          }} 
+                        />
+                        
+                        <ReferenceLine x={3} stroke="rgba(148, 163, 184, 0.2)" strokeDasharray="3 3" />
+                        <ReferenceLine x={29} stroke="rgba(16, 185, 129, 0.2)" strokeDasharray="3 3" />
+                        
+                        <Area 
+                          type="monotone" 
+                          dataKey="priceDaily" 
+                          stroke="#94A3B8" 
+                          strokeWidth={2.5}
+                          fillOpacity={1} 
+                          fill="url(#colorDaily)" 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="priceWeekly" 
+                          stroke="#F27D26" 
+                          strokeWidth={2.5}
+                          fillOpacity={1} 
+                          fill="url(#colorWeekly)" 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="priceMonthly" 
+                          stroke="#10B981" 
+                          strokeWidth={2.5}
+                          fillOpacity={1} 
+                          fill="url(#colorMonthly)" 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
@@ -2895,23 +3053,23 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
                     )}
                     %
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setIsDiscountInfoOpen(true)}
-                    className="text-[8px] font-black text-red-500 uppercase tracking-tighter cursor-pointer pb-px border-b border-red-500/30 hover:border-red-500 flex items-center gap-0.5 transition-all text-left"
-                  >
-                    {appliedPromo
-                      ? getBookingT("promo code", language)
-                      : days < 7 &&
-                          bike.isPromoActive &&
-                          bike.promoPrice &&
-                          bike.promoPrice > 0
-                        ? getBookingT("promo price", language)
-                        : days >= 30
-                          ? getBookingT("monthly discount", language)
-                          : getBookingT("weekly discount", language)}
-                    <Info className="w-2.5 h-2.5 text-red-500 shrink-0 inline-block" />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsDiscountInfoOpen(true)}
+                      className="text-[8px] font-black text-red-500 uppercase tracking-tighter cursor-pointer pb-px border-b border-red-500/30 hover:border-red-500 flex items-center gap-0.5 transition-all text-left"
+                    >
+                      {appliedPromo
+                        ? getBookingT("promo code", language)
+                        : days <= 7 &&
+                            bike.isPromoActive &&
+                            bike.promoPrice &&
+                            bike.promoPrice > 0
+                          ? getBookingT("promo price", language)
+                          : days >= 30
+                            ? getBookingT("Monthly Rate", language)
+                            : getBookingT("Weekly Rate", language)}
+                      <Info className="w-2.5 h-2.5 text-red-500 shrink-0 inline-block" />
+                    </button>
                 </div>
               )}
             </div>

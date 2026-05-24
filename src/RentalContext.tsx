@@ -16,14 +16,14 @@ export const RentalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const tomorrow = addDays(startOfToday(), 1);
   const [range, setRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: tomorrow,
-    to: addDays(tomorrow, 30)
+    to: addDays(tomorrow, 29)
   });
   const [days, setDays] = useState(30);
   const [selectedBike, setSelectedBike] = useState<Bike | null>(null);
 
   useEffect(() => {
     if (range.from && range.to) {
-      const diff = differenceInDays(range.to, range.from);
+      const diff = differenceInDays(range.to, range.from) + 1;
       setDays(Math.max(diff, 1));
     } else {
       setDays(1);
