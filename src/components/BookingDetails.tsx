@@ -2911,6 +2911,8 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
                           unit="k"
                         />
                         <Tooltip
+                          position={{ y: -80 }}
+                          allowEscapeViewBox={{ x: true, y: true }}
                           content={({ active, payload }) => {
                             if (active && payload && payload.length) {
                               const data = payload[0].payload;
