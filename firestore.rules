@@ -15,6 +15,11 @@ service cloud.firestore {
 
     // 3. Collection Rules
 
+    // Test connection
+    match /test/{testId} {
+      allow read: if true;
+    }
+
     // Bikes
     match /bikes/{bikeId} {
       allow read: if true;

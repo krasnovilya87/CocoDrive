@@ -198,6 +198,16 @@
       "schema": "ExchangeRates",
       "description": "Exchange rates storage (singleton 'latest')"
     },
+    "/test/{testId}": {
+      "schema": {
+        "title": "TestConnection",
+        "type": "object",
+        "properties": {
+          "connection": { "type": "string" }
+        }
+      },
+      "description": "Collection used for validating the database connection"
+    },
     "/admins/{adminId}": {
       "schema": {
         "title": "Admin",

@@ -88,14 +88,17 @@ const AppContent = () => {
         await getDocFromServer(doc(db, 'test', 'connection'));
         setConnectionError(null);
       } catch (error: any) {
-        console.error("Firestore connection failed:", error);
-        // Only show error if it's not a standard permission denied (which is expected if 'test/connection' doesn't exist)
-        // If it's a connection error, it will usually say something about 'client is offline' or 'project-id'
-        if (error.code === 'permission-denied') {
+        const isPermissionError = 
+          error?.code === 'permission-denied' || 
+          error?.message?.toLowerCase().includes('permission') ||
+          error?.toString()?.toLowerCase().includes('permission');
+
+        if (isPermissionError) {
           // This actually means connection IS working but we just don't have access to this specific test doc
           setConnectionError(null);
           return;
         }
+        console.error("Firestore connection failed:", error);
         setConnectionError(error.message || "Failed to connect to Firebase");
       }
     }

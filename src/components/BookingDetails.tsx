@@ -2317,7 +2317,7 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
         )}
 
         {/* Info Grid - Interactive Date Selection */}
-        <div className="relative">
+        <div className={`relative ${bike.colors ? "!mt-8" : ""}`}>
           <div
             onClick={() => setIsCalendarOpen(!isCalendarOpen)}
             className={`group cursor-pointer rounded-3xl border transition-all duration-300 overflow-hidden ${
@@ -2478,7 +2478,7 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
         </div>
 
         {/* Location & Time Section */}
-        <div className="space-y-3">
+        <div className="space-y-3 !mt-8">
           <div className="space-y-1.5">
             <span className="text-[9px] text-muted uppercase font-bold tracking-widest px-1">
               {getBookingT("Delivery Map", language)}
@@ -2611,7 +2611,7 @@ export const BookingDetails: React.FC<BookingDetailsProps> = ({
         </div>
 
         {/* Contact Form */}
-        <div className="space-y-3">
+        <div className="space-y-1.5 !mt-8">
           <div className="px-1">
             <span className="text-[9px] text-muted uppercase font-bold tracking-widest">
               {getBookingT("Contact Details", language)}
