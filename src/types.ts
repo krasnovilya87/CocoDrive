@@ -9,7 +9,6 @@ export interface Bike {
   name: string;
   type: string | string[];
   engineSize: number;
-  bestFor: string[];
   bestForPercentages?: Record<string, number>;
   hasABS: boolean;
   hasBigTrunk: boolean;

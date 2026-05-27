@@ -23,7 +23,7 @@ const BEST_FOR_CATEGORIES = [
   { id: 'City', label: 'City', icon: MapPin },
   { id: 'Long Trip', label: 'Long Trip', icon: Compass },
   { id: 'Photo', label: 'Photo', icon: Camera },
-  { id: 'Couple', label: 'Best for Couple', icon: Heart },
+  { id: 'couple', label: 'Best for Couple', icon: Heart },
 ];
 
 export const BikeInfoModal: React.FC<BikeInfoModalProps> = ({ bike, isOpen, onClose }) => {
@@ -49,10 +49,12 @@ export const BikeInfoModal: React.FC<BikeInfoModalProps> = ({ bike, isOpen, onCl
     if (bike.bestForPercentages && bike.bestForPercentages[cat.id] !== undefined) {
       percentage = bike.bestForPercentages[cat.id];
       isActive = percentage > 0;
+    } else if (cat.id === 'couple' && bike.bestForPercentages && bike.bestForPercentages['Couple'] !== undefined) {
+      percentage = bike.bestForPercentages['Couple'];
+      isActive = percentage > 0;
     } else {
-      isActive = bike.bestFor?.includes(cat.id) || false;
-      // Fallback: legacy bikes
-      percentage = isActive ? 100 : (cat.id === 'Couple' ? 50 : 0);
+      isActive = false;
+      percentage = cat.id === 'couple' ? 50 : 0;
     }
     
     return {

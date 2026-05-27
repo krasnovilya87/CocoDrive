@@ -344,21 +344,10 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
     isPromoActive: false,
     description: '',
     features: [] as string[],
-    bestFor: [] as string[],
     bestForPercentages: {} as Record<string, number>
   });
 
   const handlePriorityChange = (key: string, val: number) => {
-    const currentBestFor = formData.bestFor || [];
-    let updatedBestFor = [...currentBestFor];
-    if (val > 0) {
-      if (!updatedBestFor.includes(key)) {
-        updatedBestFor.push(key);
-      }
-    } else {
-      updatedBestFor = updatedBestFor.filter(o => o !== key);
-    }
-
     const updatedPercentages = {
       ...(formData.bestForPercentages || {}),
       [key]: val
@@ -366,7 +355,6 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
 
     setFormData({
       ...formData,
-      bestFor: updatedBestFor,
       bestForPercentages: updatedPercentages
     });
   };
@@ -1017,7 +1005,6 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
       hasUSB: bike.hasUSB || false,
       description: bike.description || '',
       features: bike.features || [],
-      bestFor: bike.bestFor || [],
       bestForPercentages: bike.bestForPercentages || {}
     });
     
@@ -1225,7 +1212,6 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
         hasBigTrunk: false,
         description: '',
         features: [],
-        bestFor: [],
         bestForPercentages: {}
       });
       setEditingBikeId(null);
@@ -1507,7 +1493,6 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                             isPromoActive: false,
                             description: '',
                             features: [],
-                            bestFor: [],
                             bestForPercentages: {}
                           });
                           setColorDrafts([]);
@@ -1923,71 +1908,31 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                             <label className="text-xs font-bold text-muted uppercase tracking-[0.2em] px-1">
                               For Whom (Для кого)
                             </label>
-                            <div className="space-y-1.5 p-3.5 bg-black/[0.015] border border-black/5 rounded-xl">
-                              <div className="relative pt-1 pb-2">
-                                {/* Slider bar background track */}
-                                <div className="absolute h-1.5 w-full bg-black/10 rounded-full top-1/2 -translate-y-1/2" />
-                                
-                                {/* Slider filled track */}
+                            <div className="p-3 bg-black/[0.015] border border-black/5 rounded-xl">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-bold text-foreground">
+                                  Best for Couple
+                                </span>
+                                <span className="text-xs font-semibold text-primary">
+                                  {formData.bestForPercentages?.['couple'] ?? formData.bestForPercentages?.['Couple'] ?? 0}%
+                                </span>
+                              </div>
+                              <div className="relative flex items-center py-1">
+                                <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
                                 <div 
-                                  className="absolute h-1.5 bg-primary rounded-full top-1/2 -translate-y-1/2"
-                                  style={{ width: `${((formData.bestFor || []).includes('Couple') ? 2 : 1) / 2 * 100}%` }}
+                                  className="absolute h-1.5 bg-primary rounded-full" 
+                                  style={{ width: `${formData.bestForPercentages?.['couple'] ?? formData.bestForPercentages?.['Couple'] ?? 0}%` }} 
                                 />
-                                
-                                {/* Real slider control */}
                                 <input
                                   type="range"
-                                  min="1"
-                                  max="2"
-                                  step="1"
-                                  value={(formData.bestFor || []).includes('Couple') ? 2 : 1}
-                                  onChange={(e) => {
-                                    const val = Number(e.target.value);
-                                    const current = formData.bestFor || [];
-                                    if (val === 2) {
-                                      if (!current.includes('Couple')) {
-                                        setFormData({ ...formData, bestFor: [...current, 'Couple'] });
-                                      }
-                                    } else {
-                                      setFormData({ ...formData, bestFor: current.filter(o => o !== 'Couple') });
-                                    }
-                                  }}
-                                  className="relative w-full h-5 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
-                                  style={{
-                                    WebkitAppearance: 'none'
-                                  }}
+                                  min="0"
+                                  max="100"
+                                  step="25"
+                                  value={formData.bestForPercentages?.['couple'] ?? formData.bestForPercentages?.['Couple'] ?? 0}
+                                  onChange={(e) => handlePriorityChange('couple', Number(e.target.value))}
+                                  className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
+                                  style={{ WebkitAppearance: 'none' }}
                                 />
-                                
-                                {/* Slider visual ticks */}
-                                <div className="relative h-6 mt-1.5 text-muted">
-                                  <span 
-                                    onClick={() => {
-                                      const current = formData.bestFor || [];
-                                      setFormData({ ...formData, bestFor: current.filter(o => o !== 'Couple') });
-                                    }}
-                                    style={{ left: '50%', transform: 'translateX(-50%)' }}
-                                    className={cn(
-                                      "absolute transition-all duration-200 cursor-pointer font-bold whitespace-nowrap", 
-                                      !(formData.bestFor || []).includes('Couple') ? "text-primary text-xs md:text-sm scale-105" : "text-muted text-xs"
-                                    )}
-                                  >
-                                    solo traveler
-                                  </span>
-                                  <span 
-                                    onClick={() => {
-                                      const current = formData.bestFor || [];
-                                      if (!current.includes('Couple')) {
-                                        setFormData({ ...formData, bestFor: [...current, 'Couple'] });
-                                      }
-                                    }}
-                                    className={cn(
-                                      "absolute right-1 transition-all duration-200 cursor-pointer font-bold whitespace-nowrap", 
-                                      (formData.bestFor || []).includes('Couple') ? "text-primary text-xs md:text-sm scale-105" : "text-muted text-xs"
-                                    )}
-                                  >
-                                    couple
-                                  </span>
-                                </div>
                               </div>
                             </div>
                           </div>
@@ -2006,21 +1951,21 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                                     City & beaches
                                   </span>
                                   <span className="text-xs font-semibold text-primary">
-                                    {formData.bestForPercentages?.['City'] ?? ((formData.bestFor || []).includes('City') ? 100 : 0)}%
+                                    {formData.bestForPercentages?.['City'] ?? 0}%
                                   </span>
                                 </div>
                                 <div className="relative flex items-center py-1">
                                   <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
                                   <div 
                                     className="absolute h-1.5 bg-primary rounded-full" 
-                                    style={{ width: `${formData.bestForPercentages?.['City'] ?? ((formData.bestFor || []).includes('City') ? 100 : 0)}%` }} 
+                                    style={{ width: `${formData.bestForPercentages?.['City'] ?? 0}%` }} 
                                   />
                                   <input
                                     type="range"
                                     min="0"
                                     max="100"
                                     step="25"
-                                    value={formData.bestForPercentages?.['City'] ?? ((formData.bestFor || []).includes('City') ? 100 : 0)}
+                                    value={formData.bestForPercentages?.['City'] ?? 0}
                                     onChange={(e) => handlePriorityChange('City', Number(e.target.value))}
                                     className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
                                     style={{ WebkitAppearance: 'none' }}
@@ -2035,21 +1980,21 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                                     Long trips
                                   </span>
                                   <span className="text-xs font-semibold text-primary">
-                                    {formData.bestForPercentages?.['Long Trip'] ?? ((formData.bestFor || []).includes('Long Trip') ? 100 : 0)}%
+                                    {formData.bestForPercentages?.['Long Trip'] ?? 0}%
                                   </span>
                                 </div>
                                 <div className="relative flex items-center py-1">
                                   <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
                                   <div 
                                     className="absolute h-1.5 bg-primary rounded-full" 
-                                    style={{ width: `${formData.bestForPercentages?.['Long Trip'] ?? ((formData.bestFor || []).includes('Long Trip') ? 100 : 0)}%` }} 
+                                    style={{ width: `${formData.bestForPercentages?.['Long Trip'] ?? 0}%` }} 
                                   />
                                   <input
                                     type="range"
                                     min="0"
                                     max="100"
                                     step="25"
-                                    value={formData.bestForPercentages?.['Long Trip'] ?? ((formData.bestFor || []).includes('Long Trip') ? 100 : 0)}
+                                    value={formData.bestForPercentages?.['Long Trip'] ?? 0}
                                     onChange={(e) => handlePriorityChange('Long Trip', Number(e.target.value))}
                                     className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
                                     style={{ WebkitAppearance: 'none' }}
@@ -2064,21 +2009,21 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
                                     Aesthetics & photo
                                   </span>
                                   <span className="text-xs font-semibold text-primary">
-                                    {formData.bestForPercentages?.['Photo'] ?? ((formData.bestFor || []).includes('Photo') ? 100 : 0)}%
+                                    {formData.bestForPercentages?.['Photo'] ?? 0}%
                                   </span>
                                 </div>
                                 <div className="relative flex items-center py-1">
                                   <div className="absolute h-1.5 w-full bg-black/10 rounded-full" />
                                   <div 
                                     className="absolute h-1.5 bg-primary rounded-full" 
-                                    style={{ width: `${formData.bestForPercentages?.['Photo'] ?? ((formData.bestFor || []).includes('Photo') ? 100 : 0)}%` }} 
+                                    style={{ width: `${formData.bestForPercentages?.['Photo'] ?? 0}%` }} 
                                   />
                                   <input
                                     type="range"
                                     min="0"
                                     max="100"
                                     step="25"
-                                    value={formData.bestForPercentages?.['Photo'] ?? ((formData.bestFor || []).includes('Photo') ? 100 : 0)}
+                                    value={formData.bestForPercentages?.['Photo'] ?? 0}
                                     onChange={(e) => handlePriorityChange('Photo', Number(e.target.value))}
                                     className="relative w-full h-4 bg-transparent appearance-none cursor-pointer focus:outline-none z-10 accent-primary"
                                     style={{ WebkitAppearance: 'none' }}

@@ -8,7 +8,12 @@ export const BIKES: Bike[] = [
     name: "Honda Scoopy",
     type: ["Popular", "Beginner", "Retro"],
     engineSize: 110,
-    bestFor: ["City", "Photo"],
+    bestForPercentages: {
+      "City": 100,
+      "Long Trip": 0,
+      "Photo": 100,
+      "couple": 0
+    },
     hasABS: false,
     hasBigTrunk: false,
     hasPhoneHolder: true,
@@ -25,7 +30,12 @@ export const BIKES: Bike[] = [
     name: "Yamaha NMAX",
     type: ["Popular", "Maxi"],
     engineSize: 155,
-    bestFor: ["City", "Long Trip", "Couple"],
+    bestForPercentages: {
+      "City": 100,
+      "Long Trip": 100,
+      "Photo": 0,
+      "couple": 100
+    },
     hasABS: true,
     hasBigTrunk: true,
     hasPhoneHolder: true,
@@ -42,7 +52,12 @@ export const BIKES: Bike[] = [
     name: "Honda Vario 125",
     type: "Budget",
     engineSize: 125,
-    bestFor: ["City"],
+    bestForPercentages: {
+      "City": 100,
+      "Long Trip": 0,
+      "Photo": 0,
+      "couple": 0
+    },
     hasABS: false,
     hasBigTrunk: false,
     hasPhoneHolder: true,
@@ -59,7 +74,12 @@ export const BIKES: Bike[] = [
     name: "Honda Vario 160",
     type: "Popular",
     engineSize: 160,
-    bestFor: ["City"],
+    bestForPercentages: {
+      "City": 100,
+      "Long Trip": 0,
+      "Photo": 0,
+      "couple": 0
+    },
     hasABS: true,
     hasBigTrunk: false,
     hasPhoneHolder: true,
@@ -76,7 +96,12 @@ export const BIKES: Bike[] = [
     name: "Honda PCX",
     type: ["Popular", "Maxi"],
     engineSize: 160,
-    bestFor: ["City", "Long Trip", "Couple"],
+    bestForPercentages: {
+      "City": 100,
+      "Long Trip": 100,
+      "Photo": 0,
+      "couple": 100
+    },
     hasABS: true,
     hasBigTrunk: true,
     hasPhoneHolder: true,
@@ -93,7 +118,12 @@ export const BIKES: Bike[] = [
     name: "Yamaha Aerox",
     type: "Popular",
     engineSize: 155,
-    bestFor: ["City"],
+    bestForPercentages: {
+      "City": 100,
+      "Long Trip": 0,
+      "Photo": 0,
+      "couple": 0
+    },
     hasABS: true,
     hasBigTrunk: false,
     hasPhoneHolder: true,
@@ -110,7 +140,12 @@ export const BIKES: Bike[] = [
     name: "Vespa Sprint",
     type: "Retro",
     engineSize: 150,
-    bestFor: ["City", "Photo", "Couple"],
+    bestForPercentages: {
+      "City": 100,
+      "Long Trip": 0,
+      "Photo": 100,
+      "couple": 100
+    },
     hasABS: true,
     hasBigTrunk: false,
     hasPhoneHolder: true,
@@ -127,7 +162,12 @@ export const BIKES: Bike[] = [
     name: "Honda ADV",
     type: "Maxi",
     engineSize: 160,
-    bestFor: ["Long Trip"],
+    bestForPercentages: {
+      "City": 0,
+      "Long Trip": 100,
+      "Photo": 0,
+      "couple": 0
+    },
     hasABS: true,
     hasBigTrunk: true,
     hasPhoneHolder: true,
@@ -144,7 +184,12 @@ export const BIKES: Bike[] = [
     name: "Yamaha XMAX",
     type: "Maxi",
     engineSize: 250,
-    bestFor: ["Long Trip", "Couple"],
+    bestForPercentages: {
+      "City": 0,
+      "Long Trip": 100,
+      "Photo": 0,
+      "couple": 100
+    },
     hasABS: true,
     hasBigTrunk: true,
     hasPhoneHolder: true,
@@ -161,7 +206,12 @@ export const BIKES: Bike[] = [
     name: "Yamaha Fazzio",
     type: ["Beginner", "Retro"],
     engineSize: 125,
-    bestFor: ["City", "Photo"],
+    bestForPercentages: {
+      "City": 100,
+      "Long Trip": 0,
+      "Photo": 100,
+      "couple": 0
+    },
     hasABS: false,
     hasBigTrunk: false,
     hasPhoneHolder: true,

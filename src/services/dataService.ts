@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, setDoc, doc, updateDoc, deleteDoc, writeBatch, serverTimestamp, query, orderBy, getDocsFromServer, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, addDoc, setDoc, doc, updateDoc, deleteDoc, writeBatch, serverTimestamp, query, orderBy, getDocsFromServer, onSnapshot, deleteField } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, auth } from '../lib/firebase';
 import { Bike, ColorReference, Owner, BikeListing, AdminContacts, PromoCode } from '../types';
@@ -93,9 +93,12 @@ export const updateBike = async (id: string, bikeData: Partial<Bike>) => {
     
     const bikeRef = doc(db, 'bikes', id);
     
+    const { bestFor, ...cleanData } = bikeData as any;
+    
     // Using updateDoc instead of setDoc to ensure document exists
     await updateDoc(bikeRef, {
-      ...bikeData,
+      ...cleanData,
+      bestFor: deleteField(),
       updatedAt: serverTimestamp()
     });
     
@@ -223,8 +226,11 @@ export const addBike = async (bikeData: Omit<Bike, 'id'>) => {
     const snapshot = await getDocs(q);
     const lastOrder = snapshot.empty ? -1 : (snapshot.docs[0].data() as any).order ?? -1;
 
+    const { bestFor, ...cleanData } = bikeData as any;
+
     const docRef = await addDoc(bikesRef, {
-      ...bikeData,
+      ...cleanData,
+      bestFor: deleteField(),
       order: lastOrder + 1,
       createdAt: serverTimestamp()
     });

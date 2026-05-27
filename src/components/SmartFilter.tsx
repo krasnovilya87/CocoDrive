@@ -232,45 +232,51 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
 
       // --- SCALE 1: CITY & BEACHES ---
       let bCity = 0;
-      if (custom !== undefined) {
-        bCity = custom.city;
-      } else if (bike.bestForPercentages && bike.bestForPercentages['City'] !== undefined) {
+      if (bike.bestForPercentages && bike.bestForPercentages['City'] !== undefined) {
         bCity = bike.bestForPercentages['City'];
+      } else if (custom !== undefined) {
+        bCity = custom.city;
       } else {
-        bCity = bike.bestFor?.includes('City') ? 100 : (bike.engineSize <= 160 ? 90 : 75);
+        bCity = bike.engineSize <= 160 ? 90 : 75;
+      }
+      if (!bike.hasABS) {
+        bCity = Math.max(0, bCity - 2);
       }
       const sCity = (cityVal === 0 || bCity >= cityVal) ? 100 : (bCity / cityVal) * 100;
 
       // --- SCALE 2: LONG TRIPS ---
       let bLong = 0;
-      if (custom !== undefined) {
-        bLong = custom.long;
-      } else if (bike.bestForPercentages && bike.bestForPercentages['Long Trip'] !== undefined) {
+      if (bike.bestForPercentages && bike.bestForPercentages['Long Trip'] !== undefined) {
         bLong = bike.bestForPercentages['Long Trip'];
+      } else if (custom !== undefined) {
+        bLong = custom.long;
       } else {
-        bLong = bike.bestFor?.includes('Long Trip') ? 100 : (bike.hasBigTrunk || bike.engineSize >= 250 ? 90 : (bike.engineSize >= 150 ? 80 : (bike.engineSize >= 125 ? 65 : 30)));
+        bLong = bike.hasBigTrunk || bike.engineSize >= 250 ? 90 : (bike.engineSize >= 150 ? 80 : (bike.engineSize >= 125 ? 65 : 30));
+      }
+      if (!bike.hasBigTrunk) {
+        bLong = Math.max(0, bLong - 2);
       }
       const sLong = (longVal === 0 || bLong >= longVal) ? 100 : (bLong / longVal) * 100;
 
       // --- SCALE 3: PHOTO & AESTHETICS ---
       let bPhoto = 0;
-      if (custom !== undefined) {
-        bPhoto = custom.photo;
-      } else if (bike.bestForPercentages && bike.bestForPercentages['Photo'] !== undefined) {
+      if (bike.bestForPercentages && bike.bestForPercentages['Photo'] !== undefined) {
         bPhoto = bike.bestForPercentages['Photo'];
+      } else if (custom !== undefined) {
+        bPhoto = custom.photo;
       } else {
-        bPhoto = bike.bestFor?.includes('Photo') ? 100 : (bike.name.toLowerCase().includes('vespa') || bike.name.toLowerCase().includes('scoopy') || bike.name.toLowerCase().includes('filano') ? 90 : 40);
+        bPhoto = bike.name.toLowerCase().includes('vespa') || bike.name.toLowerCase().includes('scoopy') || bike.name.toLowerCase().includes('filano') ? 90 : 40;
       }
       const sPhoto = (photoVal === 0 || bPhoto >= photoVal) ? 100 : (bPhoto / photoVal) * 100;
 
       // --- SCALE 4: FOR WHOM / PEOPLE COUNT ---
       let bCouple = 0;
-      if (custom !== undefined) {
+      if (bike.bestForPercentages && (bike.bestForPercentages['couple'] !== undefined || bike.bestForPercentages['Couple'] !== undefined)) {
+        bCouple = bike.bestForPercentages['couple'] !== undefined ? bike.bestForPercentages['couple'] : bike.bestForPercentages['Couple'];
+      } else if (custom !== undefined) {
         bCouple = custom.couple;
-      } else if (bike.bestForPercentages && bike.bestForPercentages['Couple'] !== undefined) {
-        bCouple = bike.bestForPercentages['Couple'];
       } else {
-        bCouple = bike.bestFor?.includes('Couple') ? 100 : (bike.engineSize >= 150 ? 90 : (bike.engineSize >= 125 ? 70 : 40));
+        bCouple = bike.engineSize >= 150 ? 90 : (bike.engineSize >= 125 ? 70 : 40);
       }
       const sPeople = peopleCount === 2 ? (100 <= bCouple ? 100 : bCouple) : 100;
 
@@ -364,7 +370,7 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                 </div>
                 
                 {/* Visual Gradient Bar Container */}
-                <div className="relative h-2 md:h-2.5 w-full bg-black/10 dark:bg-white/10 rounded-full flex items-center pr-1 overflow-hidden">
+                <div className="relative h-2 md:h-2.5 w-full bg-black/10 dark:bg-white/10 rounded-full flex items-center pr-1">
                   <motion.div 
                     animate={{ width: peopleCount === 2 ? "100%" : "50%" }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
@@ -373,6 +379,15 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                   {/* End Indicator Dot */}
                   <div className="absolute right-1 w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-black/20 dark:bg-white/20" />
                   
+                  {/* Custom styled slider thumb */}
+                  <motion.div 
+                    animate={{ left: peopleCount === 2 ? "100%" : "50%" }}
+                    transition={{ duration: 0.3, ease: "easeOut" }}
+                    className="absolute -translate-x-1/2 w-4 h-4 md:w-5 md:h-5 rounded-full bg-background border-2 border-primary shadow-md flex items-center justify-center cursor-pointer pointer-events-none z-10"
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  </motion.div>
+
                   {/* Real transparent range input overlaid over the whole container */}
                   <input
                     id="slider-people-count"
@@ -425,6 +440,15 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                       {/* End Indicator Dot */}
                       <div className="absolute right-1 w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-black/20 dark:bg-white/20" />
                       
+                      {/* Custom styled slider thumb */}
+                      <motion.div 
+                        animate={{ left: `${cityVal}%` }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="absolute -translate-x-1/2 w-4 h-4 md:w-5 md:h-5 rounded-full bg-background border-2 border-primary shadow-md flex items-center justify-center cursor-pointer pointer-events-none z-10"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      </motion.div>
+
                       {/* Real transparent range input overlaid over the whole container */}
                       <input
                         id="slider-city-priority"
@@ -468,6 +492,15 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                       {/* End Indicator Dot */}
                       <div className="absolute right-1 w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-black/20 dark:bg-white/20" />
                       
+                      {/* Custom styled slider thumb */}
+                      <motion.div 
+                        animate={{ left: `${longVal}%` }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="absolute -translate-x-1/2 w-4 h-4 md:w-5 md:h-5 rounded-full bg-background border-2 border-primary shadow-md flex items-center justify-center cursor-pointer pointer-events-none z-10"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      </motion.div>
+
                       {/* Real transparent range input overlaid over the whole container */}
                       <input
                         id="slider-longtrip-priority"
@@ -511,6 +544,15 @@ export const SmartFilter: React.FC<SmartFilterProps> = ({ isOpen, onClose }) => 
                       {/* End Indicator Dot */}
                       <div className="absolute right-1 w-0.5 h-0.5 md:w-1 md:h-1 rounded-full bg-black/20 dark:bg-white/20" />
                       
+                      {/* Custom styled slider thumb */}
+                      <motion.div 
+                        animate={{ left: `${photoVal}%` }}
+                        transition={{ duration: 0.3, ease: "easeOut" }}
+                        className="absolute -translate-x-1/2 w-4 h-4 md:w-5 md:h-5 rounded-full bg-background border-2 border-primary shadow-md flex items-center justify-center cursor-pointer pointer-events-none z-10"
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                      </motion.div>
+
                       {/* Real transparent range input overlaid over the whole container */}
                       <input
                         id="slider-photo-priority"

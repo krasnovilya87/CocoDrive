@@ -1,4 +1,4 @@
-import { collection, getDocs, setDoc, doc, serverTimestamp, writeBatch, query } from 'firebase/firestore';
+import { collection, getDocs, setDoc, doc, serverTimestamp, writeBatch, query, deleteField } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { BIKES } from '../constants';
 import { Bike } from '../types';
@@ -30,6 +30,7 @@ export const seedBikes = async () => {
       
       batch.set(bikeRef, {
         ...bike,
+        bestFor: deleteField(),
         order: index,
         updatedAt: serverTimestamp()
       }, { merge: true }); // Use merge to avoid overwriting fields added via UI (like custom generalPhotos)
