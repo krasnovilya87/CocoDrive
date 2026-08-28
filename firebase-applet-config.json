@@ -1,10 +1,10 @@
 {
-  "apiKey": "AIzaSyA-jJneO241FeOnTAJ5KCiP18cctjbVB4U",
-  "authDomain": "bali2ride.firebaseapp.com",
-  "projectId": "bali2ride",
-  "storageBucket": "bali2ride.firebasestorage.app",
-  "messagingSenderId": "673655426372",
-  "appId": "1:673655426372:web:2e9dd3ba36f21a7c061b11",
-  "measurementId": "G-QYRGJM4KC0",
+  "apiKey": "AIzaSyBHRIXVYPF_3wp_6wWnKGd-yuy6yTB3gUc",
+  "authDomain": "cocodrive-bali-2026.firebaseapp.com",
+  "projectId": "cocodrive-bali-2026",
+  "storageBucket": "cocodrive-bali-2026.firebasestorage.app",
+  "messagingSenderId": "516682425875",
+  "appId": "1:516682425875:web:83d0bf0ec8cd3904f5c1e6",
+  "measurementId": "G-7LH0WN1VS3",
   "firestoreDatabaseId": "(default)"
 }
