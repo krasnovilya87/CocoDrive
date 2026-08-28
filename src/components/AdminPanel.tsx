@@ -89,7 +89,7 @@ export const AdminPanel = ({ isOpen, onClose }: { isOpen: boolean, onClose: () =
       console.error("Login failed:", error);
       showNotification("Login failed. Check console for details.", "error");
     } finally {
-      // Auth state listener handles cleaning up loading
+     setAuthLoading(false);
     }
   };
 
